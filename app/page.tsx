@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 
 // --- Initial Data & Configuration ---
@@ -632,7 +633,7 @@ const subjectImages = {
     "https://placehold.co/600x400/C026D3/FFFFFF?text=Discrete+Math",
 };
 
-const pyqLink =
+const initialPyqLink =
   "https://practicepaper.in/gate-cse/topic-wise-practice-of-gate-cse-previous-year-papers";
 
 // --- Helper Functions ---
@@ -654,16 +655,16 @@ const formatMinutesToHM = (minutes: any) => {
   return `${h}h ${m}m`;
 };
 
-const parseCourseData = (rawData: string) => {
+const parseCourseData = (rawData: any) => {
   const lines = rawData.trim().split("\n");
-  const subjects = [] as any[];
-  let currentSubject: any = null;
-  lines.forEach((line: string) => {
+  const subjects = [];
+  let currentSubject = null;
+  lines.forEach((line) => {
     line = line.trim();
     if (!line) return;
     if (line.includes("•")) {
       if (currentSubject) {
-        const [name, duration] = line.split("•").map((s: string) => s.trim());
+        const [name, duration] = line.split("•").map((s) => s.trim());
         currentSubject.lessons.push({
           id: crypto.randomUUID(),
           name,
@@ -676,7 +677,8 @@ const parseCourseData = (rawData: string) => {
       currentSubject = {
         name: line,
         lessons: [],
-        link: (initialSubjectLinks as any)[line] || "",
+        link: initialSubjectLinks[line] || "",
+        pyqLink: "", // Add individual PYQ link property
       };
     }
   });
@@ -685,6 +687,45 @@ const parseCourseData = (rawData: string) => {
 };
 
 // --- Child Components ---
+
+const ThemeToggle = ({ theme, toggleTheme }) => (
+  <button
+    onClick={toggleTheme}
+    className="absolute top-4 right-4 p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+  >
+    {theme === "light" ? (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-6 w-6"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+        />
+      </svg>
+    ) : (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-6 w-6"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+        />
+      </svg>
+    )}
+  </button>
+);
 
 const MotivationalQuote = () => {
   const [quote, setQuote] = useState("");
@@ -703,10 +744,7 @@ const MotivationalQuote = () => {
 
   useEffect(() => {
     const today = getTodayString();
-    const savedQuoteDataStr = localStorage.getItem("dailyQuote");
-    const savedQuoteData = savedQuoteDataStr
-      ? JSON.parse(savedQuoteDataStr)
-      : null;
+    const savedQuoteData = JSON.parse(localStorage.getItem("dailyQuote"));
     if (savedQuoteData && savedQuoteData.date === today) {
       setQuote(savedQuoteData.quote);
     } else {
@@ -720,127 +758,46 @@ const MotivationalQuote = () => {
   }, []);
 
   return (
-    <div className="text-center mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-100 rounded-lg border border-blue-200">
-      <p className="text-lg font-medium text-gray-700">"{quote}"</p>
+    <div className="text-center mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-100 rounded-lg border border-blue-200 dark:from-blue-900/50 dark:to-indigo-900/50 dark:border-blue-800/50">
+      <p className="text-lg font-medium text-slate-700 dark:text-gray-300">
+        "{quote}"
+      </p>
     </div>
   );
 };
 
-const MiniCalendar = ({ streaks }: { streaks: string[] }) => {
-  const calendarData = useMemo(() => {
-    const now = new Date();
-    const month = now.getMonth();
-    const year = now.getFullYear();
-    const todayDate = now.getDate();
-    const monthNames = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
-    const daysOfWeek = ["S", "M", "T", "W", "T", "F", "S"];
-    const firstDayOfMonth = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    return {
-      month,
-      year,
-      todayDate,
-      monthNames,
-      daysOfWeek,
-      firstDayOfMonth,
-      daysInMonth,
-    };
-  }, []);
-
-  const {
-    month,
-    year,
-    todayDate,
-    monthNames,
-    daysOfWeek,
-    firstDayOfMonth,
-    daysInMonth,
-  } = calendarData;
-
-  return (
-    <div className="bg-white/50 p-4 rounded-xl backdrop-blur-sm border border-white/20 h-full">
-      <h3 className="font-semibold text-gray-700 mb-2">
-        {monthNames[month]} {year}
-      </h3>
-      <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-500">
-        {daysOfWeek.map((day, index) => (
-          <div key={`${day}-${index}`}>{day}</div>
-        ))}
-        {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-          <div key={`empty-${i}`}></div>
-        ))}
-        {Array.from({ length: daysInMonth }).map((_, dayIndex) => {
-          const day = dayIndex + 1;
-          const dateStr = `${year}-${String(month + 1).padStart(
-            2,
-            "0"
-          )}-${String(day).padStart(2, "0")}`;
-          const isStreaked = streaks.includes(dateStr);
-          const isToday = day === todayDate;
-          const classes = `calendar-day w-7 h-7 flex items-center justify-center text-sm
-                        ${
-                          isStreaked
-                            ? "bg-indigo-500 text-white rounded-full"
-                            : ""
-                        }
-                        ${
-                          isToday ? "ring-2 ring-indigo-500 rounded-full" : ""
-                        }`;
-          return (
-            <div key={day} className={classes}>
-              {day}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-const Lesson = ({
-  lesson,
-  isCompleted,
-  onToggle,
-}: {
-  lesson: any;
-  isCompleted: boolean;
-  onToggle: () => void;
-}) => (
+const Lesson = ({ lesson, isCompleted, onToggle }) => (
   <div
-    className={`flex items-center justify-between p-3 border-b border-gray-100 last:border-b-0 hover:bg-indigo-50/50 transition-colors ${
+    className={`flex items-center justify-between p-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0 hover:bg-indigo-50/50 dark:hover:bg-gray-800/50 transition-colors ${
       isCompleted ? "completed-lesson" : ""
     }`}
   >
-    <div className="flex items-center min-w-0">
+    <div className="flex items-center min-w-0 flex-grow">
       <input
         type="checkbox"
+        id={`lesson-check-${lesson.id}`}
         className="custom-checkbox mr-4 flex-shrink-0"
         checked={isCompleted}
         onChange={onToggle}
       />
       <label
-        className={`cursor-pointer text-sm truncate ${
-          isCompleted ? "text-gray-400 line-through" : "text-gray-700"
+        htmlFor={`lesson-check-${lesson.id}`}
+        onClick={(e: React.MouseEvent<HTMLLabelElement>) => {
+          const target = e.target as HTMLElement | null;
+          if (target && target.nodeName !== "INPUT") {
+            onToggle();
+          }
+        }}
+        className={`cursor-pointer text-sm truncate w-full ${
+          isCompleted
+            ? "text-gray-500 dark:text-gray-500 line-through"
+            : "text-slate-700 dark:text-gray-300"
         }`}
       >
         {lesson.name}
       </label>
     </div>
-    <span className="text-xs text-gray-400 font-mono bg-gray-100 px-2 py-1 rounded flex-shrink-0 ml-2">
+    <span className="text-xs text-slate-600 dark:text-gray-500 font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded flex-shrink-0 ml-2">
       {lesson.duration}
     </span>
   </div>
@@ -851,21 +808,17 @@ const Subject = ({
   completedLessons,
   onLessonToggle,
   onEdit,
-}: {
-  subject: any;
-  completedLessons: any;
-  onLessonToggle: (lessonId: string) => void;
-  onEdit: (subjectName: string) => void;
+  globalPyqLink,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
 
   const { completedDuration, totalDuration } = useMemo(() => {
     let completed = 0;
     const total = subject.lessons.reduce(
-      (sum: number, l: any) => sum + l.durationInMinutes,
+      (sum, l) => sum + l.durationInMinutes,
       0
     );
-    subject.lessons.forEach((l: any) => {
+    subject.lessons.forEach((l) => {
       if (completedLessons[l.id]) {
         completed += l.durationInMinutes;
       }
@@ -874,7 +827,7 @@ const Subject = ({
   }, [subject.lessons, completedLessons]);
 
   const completedCount = useMemo(
-    () => subject.lessons.filter((l: any) => !!completedLessons[l.id]).length,
+    () => subject.lessons.filter((l) => !!completedLessons[l.id]).length,
     [subject.lessons, completedLessons]
   );
 
@@ -883,11 +836,12 @@ const Subject = ({
       ? (completedCount / subject.lessons.length) * 100
       : 0;
   const imageLink =
-    (subjectImages as any)[subject.name] ||
+    subjectImages[subject.name] ||
     "https://placehold.co/600x400/cccccc/FFFFFF?text=GATE+CSE";
+  const finalPyqLink = subject.pyqLink || globalPyqLink;
 
   return (
-    <div className="bg-white/80 rounded-2xl shadow-lg border border-white/30 backdrop-blur-sm overflow-hidden transition-all duration-300 flex flex-col">
+    <div className="bg-white/80 dark:bg-gray-800/50 rounded-2xl shadow-lg border border-white/30 dark:border-gray-700/50 backdrop-blur-sm overflow-hidden transition-all duration-300 flex flex-col">
       <img
         src={imageLink}
         alt={subject.name}
@@ -896,22 +850,24 @@ const Subject = ({
       <div className="p-5 flex flex-col flex-grow">
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-xl font-bold text-slate-800">{subject.name}</h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">
+              {subject.name}
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-gray-400 mt-1">
               {completedCount} / {subject.lessons.length} lessons
             </p>
-            <p className="text-xs text-gray-400 mt-1 font-mono">
+            <p className="text-xs text-slate-500 dark:text-gray-500 mt-1 font-mono">
               {formatMinutesToHM(completedDuration)} /{" "}
               {formatMinutesToHM(totalDuration)}
             </p>
           </div>
           <button
             onClick={() => onEdit(subject.name)}
-            className="p-2 rounded-full hover:bg-gray-200/50"
+            className="p-2 rounded-full hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-gray-500"
+              className="h-5 w-5 text-slate-600 dark:text-gray-400"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -926,13 +882,13 @@ const Subject = ({
         </div>
 
         <div className="flex items-center mt-4">
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
             <div
               className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2.5 rounded-full"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
-          <span className="text-sm font-semibold text-indigo-700 ml-3 w-16 text-right">
+          <span className="text-sm font-semibold text-indigo-700 dark:text-indigo-400 ml-3 w-16 text-right">
             {progress.toFixed(1)}%
           </span>
         </div>
@@ -950,7 +906,7 @@ const Subject = ({
             </a>
           )}
           <a
-            href={pyqLink}
+            href={finalPyqLink}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
@@ -961,7 +917,7 @@ const Subject = ({
         </div>
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="mt-4 text-indigo-600 font-semibold text-sm w-full text-left"
+          className="mt-4 text-indigo-600 dark:text-indigo-400 font-semibold text-sm w-full text-left"
         >
           {isCollapsed
             ? `Show ${subject.lessons.length} Lessons`
@@ -969,11 +925,11 @@ const Subject = ({
         </button>
       </div>
       <div
-        className={`lesson-list border-t border-gray-200 ${
+        className={`lesson-list border-t border-gray-200 dark:border-gray-700 ${
           isCollapsed ? "collapsed" : ""
         }`}
       >
-        {subject.lessons.map((lesson: any) => (
+        {subject.lessons.map((lesson) => (
           <Lesson
             key={lesson.id}
             lesson={lesson}
@@ -992,12 +948,6 @@ const PacingTracker = ({
   targetDate,
   onTargetDateChange,
   streaks,
-}: {
-  totalLessons: number;
-  totalCompleted: number;
-  targetDate: string;
-  onTargetDateChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  streaks: string[];
 }) => {
   const paceInfo = useMemo(() => {
     const today = new Date();
@@ -1009,19 +959,20 @@ const PacingTracker = ({
     if (lessonsRemaining <= 0) {
       return {
         status: "Completed",
-        color: "text-green-500",
+        color: "text-green-500 dark:text-green-400",
         projection: "Congratulations!",
         requiredPace: 0,
       };
     }
 
-    const daysRemaining = Math.ceil(
-      (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    const daysRemaining = Math.max(
+      0,
+      Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
     );
     if (daysRemaining <= 0) {
       return {
         status: "Past Due",
-        color: "text-red-500",
+        color: "text-red-500 dark:text-red-400",
         projection: "Target date is in the past.",
         requiredPace: Infinity,
       };
@@ -1050,13 +1001,13 @@ const PacingTracker = ({
     }
 
     let status = "On Track";
-    let color = "text-green-500";
+    let color = "text-green-500 dark:text-green-400";
     if (currentPace < requiredPace * 0.9) {
       status = "Lagging Behind";
-      color = "text-red-500";
+      color = "text-red-500 dark:text-red-400";
     } else if (currentPace > requiredPace * 1.1) {
       status = "Ahead";
-      color = "text-blue-500";
+      color = "text-blue-500 dark:text-blue-400";
     }
 
     return { status, color, projection, requiredPace: requiredPace.toFixed(2) };
@@ -1064,27 +1015,33 @@ const PacingTracker = ({
 
   return (
     <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-      <div className="bg-white/50 p-4 rounded-xl backdrop-blur-sm border border-white/20">
-        <h3 className="font-semibold text-gray-700">Target Date</h3>
+      <div className="bg-white/50 dark:bg-gray-800/20 p-4 rounded-xl backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
+        <h3 className="font-semibold text-slate-700 dark:text-gray-300">
+          Target Date
+        </h3>
         <input
           type="date"
           value={targetDate}
           onChange={onTargetDateChange}
-          className="mt-2 p-2 border rounded-md w-full"
+          className="mt-2 p-2 border rounded-md w-full bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
         />
-        <p className="text-xs mt-2 text-gray-500">
+        <p className="text-xs mt-2 text-slate-600 dark:text-gray-400">
           Required Pace: {paceInfo.requiredPace} lessons/day
         </p>
       </div>
-      <div className="bg-white/50 p-4 rounded-xl backdrop-blur-sm border border-white/20">
-        <h3 className="font-semibold text-gray-700">Pacing Status</h3>
+      <div className="bg-white/50 dark:bg-gray-800/20 p-4 rounded-xl backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
+        <h3 className="font-semibold text-slate-700 dark:text-gray-300">
+          Pacing Status
+        </h3>
         <p className={`text-3xl font-bold mt-2 ${paceInfo.color}`}>
           {paceInfo.status}
         </p>
       </div>
-      <div className="bg-white/50 p-4 rounded-xl backdrop-blur-sm border border-white/20">
-        <h3 className="font-semibold text-gray-700">Projected Completion</h3>
-        <p className="text-2xl font-bold text-gray-800 mt-2">
+      <div className="bg-white/50 dark:bg-gray-800/20 p-4 rounded-xl backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
+        <h3 className="font-semibold text-slate-700 dark:text-gray-300">
+          Projected Completion
+        </h3>
+        <p className="text-2xl font-bold text-slate-800 dark:text-gray-200 mt-2">
           {paceInfo.projection}
         </p>
       </div>
@@ -1092,100 +1049,448 @@ const PacingTracker = ({
   );
 };
 
-const EditSubjectModal = ({
-  subject,
-  isOpen,
-  onClose,
-  onSave,
-}: {
-  subject: any;
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (subjectName: string, lessons: any[], link: string) => void;
-}) => {
-  const [lessons, setLessons] = useState<any[]>([]);
+const EditSubjectModal = ({ subject, isOpen, onClose, onSave, onDelete }) => {
+  const [lessons, setLessons] = useState([]);
   const [link, setLink] = useState("");
+  const [pyqLink, setPyqLink] = useState("");
+  const [bulkLessons, setBulkLessons] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (subject) {
       setLessons(JSON.parse(JSON.stringify(subject.lessons))); // Deep copy
       setLink(subject.link || "");
+      setPyqLink(subject.pyqLink || "");
+      setBulkLessons("");
+      setShowDeleteConfirm(false);
     }
   }, [subject]);
 
-  if (!isOpen || !subject) return null;
-
-  const handleLessonChange = (id: string, field: string, value: string) => {
-    setLessons(
-      lessons.map((l: any) => (l.id === id ? { ...l, [field]: value } : l))
-    );
-  };
-
-  const handleAddLesson = () => {
-    setLessons([
-      ...lessons,
-      { id: crypto.randomUUID(), name: "New Lesson", duration: "1h 0m" },
-    ]);
-  };
-
-  const handleDeleteLesson = (id: string) => {
-    setLessons(lessons.filter((l: any) => l.id !== id));
-  };
+  if (!isOpen) return null;
 
   const handleSave = () => {
-    const updatedLessons = lessons.map((l) => ({
+    let allLessons = [...lessons];
+    if (bulkLessons.trim()) {
+      const newLessons = bulkLessons
+        .trim()
+        .split("\n")
+        .map((line) => {
+          if (line.includes("•")) {
+            const [name, duration] = line.split("•").map((s) => s.trim());
+            return {
+              id: crypto.randomUUID(),
+              name,
+              duration,
+              durationInMinutes: parseDurationToMinutes(duration),
+            };
+          }
+          return null;
+        })
+        .filter(Boolean);
+      allLessons = [...allLessons, ...newLessons];
+    }
+    const updatedLessons = allLessons.map((l) => ({
       ...l,
       durationInMinutes: parseDurationToMinutes(l.duration),
     }));
-    onSave(subject.name, updatedLessons, link);
+    onSave(subject.name, updatedLessons, link, pyqLink);
+    onClose();
+  };
+
+  const handleDeleteSubject = () => {
+    onDelete(subject.name);
     onClose();
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <div className="p-4 border-b">
-          <h2 className="text-xl font-bold">Edit {subject.name}</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
+          <h2 className="text-xl font-bold dark:text-white">
+            Edit {subject?.name}
+          </h2>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
         </div>
-        <div className="p-4 overflow-y-auto">
+        <div className="p-4 overflow-y-auto space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Course Link
             </label>
             <input
               type="text"
               value={link}
               onChange={(e) => setLink(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="mt-1 block w-full input-style"
+              placeholder="https://..."
             />
           </div>
-          <h3 className="text-lg font-semibold mt-4 mb-2">Lessons</h3>
-          <div className="space-y-2">
-            {lessons.map((lesson) => (
-              <div key={lesson.id} className="flex items-center space-x-2">
-                <input
-                  type="text"
-                  value={lesson.name}
-                  onChange={(e) =>
-                    handleLessonChange(lesson.id, "name", e.target.value)
-                  }
-                  className="flex-grow px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm"
-                />
-                <input
-                  type="text"
-                  value={lesson.duration}
-                  onChange={(e) =>
-                    handleLessonChange(lesson.id, "duration", e.target.value)
-                  }
-                  className="w-28 px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm"
-                />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Individual PYQ Link (Overrides Global)
+            </label>
+            <input
+              type="text"
+              value={pyqLink}
+              onChange={(e) => setPyqLink(e.target.value)}
+              className="mt-1 block w-full input-style"
+              placeholder="https://..."
+            />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold mt-4 mb-2 dark:text-white">
+              Add Multiple Lessons
+            </h3>
+            <textarea
+              value={bulkLessons}
+              onChange={(e) => setBulkLessons(e.target.value)}
+              className="mt-1 block w-full input-style h-24"
+              placeholder="Lesson Name 1 • 1h 30m&#10;Lesson Name 2 • 45m"
+            ></textarea>
+          </div>
+        </div>
+        <div className="p-4 border-t dark:border-gray-700 flex justify-end space-x-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+          >
+            Save Changes
+          </button>
+        </div>
+
+        {showDeleteConfirm && (
+          <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-lg">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl text-center">
+              <h3 className="text-lg font-bold dark:text-white">
+                Are you sure?
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 my-2">
+                This will permanently delete the subject and all its lessons.
+              </p>
+              <div className="flex justify-center space-x-4 mt-4">
                 <button
-                  onClick={() => handleDeleteLesson(lesson.id)}
-                  className="p-2 text-red-500 hover:bg-red-100 rounded-full"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded-md"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteSubject}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const AddSubjectModal = ({ isOpen, onClose, onSave }) => {
+  const [subjectName, setSubjectName] = useState("");
+  const [subjectLink, setSubjectLink] = useState("");
+  const [lessonsRaw, setLessonsRaw] = useState("");
+
+  if (!isOpen) return null;
+
+  const handleSave = () => {
+    if (!subjectName.trim()) {
+      alert("Subject name is required.");
+      return;
+    }
+    const newSubject = {
+      name: subjectName,
+      lessons: [],
+      link: subjectLink,
+    };
+    const lines = lessonsRaw.trim().split("\n");
+    lines.forEach((line) => {
+      line = line.trim();
+      if (line && line.includes("•")) {
+        const [name, duration] = line.split("•").map((s) => s.trim());
+        newSubject.lessons.push({
+          id: crypto.randomUUID(),
+          name,
+          duration,
+          durationInMinutes: parseDurationToMinutes(duration),
+        });
+      }
+    });
+    onSave(newSubject);
+    onClose();
+    setSubjectName("");
+    setSubjectLink("");
+    setLessonsRaw("");
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="p-4 border-b dark:border-gray-700">
+          <h2 className="text-xl font-bold dark:text-white">Add New Subject</h2>
+        </div>
+        <div className="p-4 overflow-y-auto space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Subject Name
+            </label>
+            <input
+              type="text"
+              value={subjectName}
+              onChange={(e) => setSubjectName(e.target.value)}
+              className="mt-1 block w-full input-style"
+              placeholder="e.g., Aptitude"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Course Link (Optional)
+            </label>
+            <input
+              type="text"
+              value={subjectLink}
+              onChange={(e) => setSubjectLink(e.target.value)}
+              className="mt-1 block w-full input-style"
+              placeholder="https://..."
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Lessons
+            </label>
+            <textarea
+              value={lessonsRaw}
+              onChange={(e) => setLessonsRaw(e.target.value)}
+              className="mt-1 block w-full input-style h-40"
+              placeholder="Lesson Name 1 • 1h 30m&#10;Lesson Name 2 • 45m"
+            ></textarea>
+            <p className="text-xs text-gray-500 mt-1">
+              Paste lessons, one per line, with name and duration separated by
+              '•'.
+            </p>
+          </div>
+        </div>
+        <div className="p-4 border-t dark:border-gray-700 flex justify-end space-x-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+          >
+            Add Subject
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TodaysLessons = ({ lessons, completedLessons, onLessonToggle }) => (
+  <div className="p-4 rounded-xl bg-white/50 dark:bg-gray-800/20 backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
+    <h3 className="font-semibold text-slate-700 dark:text-gray-300 flex items-center">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-5 w-5 mr-2 text-green-500"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fillRule="evenodd"
+          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+          clipRule="evenodd"
+        />
+      </svg>
+      Today's Lessons
+    </h3>
+    <div className="mt-2 text-sm text-slate-600 dark:text-gray-400">
+      {lessons.length > 0 ? (
+        <div className="space-y-1">
+          {lessons.map((l) => (
+            <Lesson
+              key={l.id}
+              lesson={l}
+              isCompleted={!!completedLessons[l.id]}
+              onToggle={() => onLessonToggle(l.id)}
+            />
+          ))}
+        </div>
+      ) : (
+        "Select ongoing subjects and set targets to see your lessons for today!"
+      )}
+    </div>
+  </div>
+);
+
+const RevisionReminder = ({ completedLast7Days }) => (
+  <div className="p-4 rounded-xl bg-white/50 dark:bg-gray-800/20 backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
+    <h3 className="font-semibold text-slate-700 dark:text-gray-300 flex items-center">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-5 w-5 mr-2 text-blue-500"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fillRule="evenodd"
+          d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+          clipRule="evenodd"
+        />
+      </svg>
+      Weekly Revision Reminders
+    </h3>
+    <div className="mt-2 text-sm text-slate-600 dark:text-gray-400">
+      {completedLast7Days > 0
+        ? "You've been working hard! Don't forget to revise what you've learned this week."
+        : "No lessons need revision this week. Keep completing lessons to build your revision schedule!"}
+    </div>
+  </div>
+);
+
+const AddTestSeries = ({ onAddTest }) => {
+  const [name, setName] = useState("");
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [desc, setDesc] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!name.trim() || !date) {
+      alert("Test Name and Date are required.");
+      return;
+    }
+    onAddTest({ id: crypto.randomUUID(), name, date, time, desc });
+    setName("");
+    setDate("");
+    setTime("");
+    setDesc("");
+  };
+
+  return (
+    <div className="p-4 rounded-xl bg-white/50 dark:bg-gray-800/20 backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
+      <h3 className="font-semibold text-slate-700 dark:text-gray-300 flex items-center">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-5 w-5 mr-2 text-purple-500"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+          <path
+            fillRule="evenodd"
+            d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"
+            clipRule="evenodd"
+          />
+        </svg>
+        Add Test Series
+      </h3>
+      <form onSubmit={handleSubmit} className="mt-2 space-y-3">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Test Name e.g., GATE Mock Test 1"
+          className="w-full input-style"
+        />
+        <div className="flex space-x-2">
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full input-style"
+          />
+          <input
+            type="time"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            className="w-full input-style"
+          />
+        </div>
+        <textarea
+          value={desc}
+          onChange={(e) => setDesc(e.target.value)}
+          placeholder="Description (Optional)"
+          className="w-full input-style h-16"
+        ></textarea>
+        <button
+          type="submit"
+          className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg"
+        >
+          Add Test
+        </button>
+      </form>
+    </div>
+  );
+};
+
+const UpcomingTests = ({ tests, onDeleteTest }) => (
+  <div className="p-4 rounded-xl bg-white/50 dark:bg-gray-800/20 backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
+    <h3 className="font-semibold text-slate-700 dark:text-gray-300 flex items-center">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-5 w-5 mr-2 text-orange-500"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fillRule="evenodd"
+          d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+          clipRule="evenodd"
+        />
+      </svg>
+      Upcoming Tests
+    </h3>
+    <div className="mt-2 text-sm text-slate-600 dark:text-gray-400 space-y-2">
+      {tests.length > 0
+        ? tests
+            .sort(
+              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+            )
+            .map((test) => (
+              <div
+                key={test.id}
+                className="p-2 bg-gray-100 dark:bg-gray-700/50 rounded-md flex justify-between items-center"
+              >
+                <div>
+                  <p className="font-semibold">{test.name}</p>
+                  <p className="text-xs text-slate-600 dark:text-gray-400">
+                    {new Date(test.date).toLocaleDateString()} {test.time}
+                  </p>
+                </div>
+                <button
+                  onClick={() => onDeleteTest(test.id)}
+                  className="p-1 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
+                    className="h-4 w-4"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
@@ -1197,589 +1502,118 @@ const EditSubjectModal = ({
                   </svg>
                 </button>
               </div>
-            ))}
-          </div>
-          <button
-            onClick={handleAddLesson}
-            className="mt-4 text-sm font-semibold text-indigo-600 hover:text-indigo-800"
-          >
-            + Add Lesson
-          </button>
-        </div>
-        <div className="p-4 border-t flex justify-end space-x-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-          >
-            Save Changes
-          </button>
-        </div>
-      </div>
+            ))
+        : "No upcoming tests scheduled. Add some test series to stay organized!"}
     </div>
-  );
-};
+  </div>
+);
 
-const TodaysCompletedLessons = ({
-  subjects,
-  completedLessons,
-}: {
-  subjects: any[];
-  completedLessons: any;
-}) => {
-  const today = getTodayString();
+const PyqLinkEditor = ({ globalLink, onGlobalLinkChange }) => {
+  const [currentLink, setCurrentLink] = useState(globalLink);
 
-  const todaysCompletions = useMemo(() => {
-    const completions: any[] = [];
-    Object.entries(completedLessons || {}).forEach(([lessonId, completion]) => {
-      if ((completion as any)?.date === today) {
-        // Find the lesson details
-        for (const subject of subjects) {
-          const lesson = subject.lessons.find((l: any) => l.id === lessonId);
-          if (lesson) {
-            completions.push({
-              lessonName: lesson.name,
-              subjectName: subject.name,
-              duration: lesson.duration,
-            });
-            break;
-          }
-        }
-      }
-    });
-    return completions;
-  }, [subjects, completedLessons, today]);
-
-  return (
-    <div className="bg-white/80 rounded-2xl shadow-lg border border-white/30 backdrop-blur-sm p-6">
-      <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6 text-green-600 mr-2"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        Today's Completed Lessons
-      </h2>
-
-      <div className="space-y-3">
-        {todaysCompletions.length === 0 ? (
-          <p className="text-gray-500 text-sm italic">
-            No lessons completed today yet. Complete some lessons to see them
-            here!
-          </p>
-        ) : (
-          todaysCompletions.map((completion, index) => (
-            <div
-              key={index}
-              className="p-4 bg-green-50 rounded-lg border border-green-200"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-grow">
-                  <h3 className="font-medium text-gray-800 mb-1">
-                    {completion.lessonName}
-                  </h3>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-green-700 bg-green-100 px-2 py-1 rounded-full">
-                      {completion.subjectName}
-                    </span>
-                    <span className="text-xs text-gray-500 font-mono">
-                      {completion.duration}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {todaysCompletions.length > 0 && (
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <p className="text-sm text-blue-700">
-            🎉 Great job! You've completed {todaysCompletions.length} lesson
-            {todaysCompletions.length !== 1 ? "s" : ""} today. These will appear
-            in your weekly revision reminders.
-          </p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const WeeklyRevision = ({
-  subjects,
-  completedLessons,
-}: {
-  subjects: any[];
-  completedLessons: any;
-}) => {
-  const today = new Date();
-
-  const lessonsForRevision = useMemo(() => {
-    const revisionsNeeded = [] as any[];
-
-    Object.entries(completedLessons || {}).forEach(([lessonId, completion]) => {
-      const completionDate = new Date((completion as { date: string }).date);
-      const daysDiff = Math.floor(
-        (today.getTime() - completionDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
-
-      // Show lessons that are exactly 7, 14, 21, 28 days old (weekly intervals)
-      if (daysDiff > 0 && daysDiff % 7 === 0 && daysDiff <= 28) {
-        // Find the lesson details
-        for (const subject of subjects) {
-          const lesson = subject.lessons.find((l: any) => l.id === lessonId);
-          if (lesson) {
-            revisionsNeeded.push({
-              lessonId,
-              lessonName: lesson.name,
-              subjectName: subject.name,
-              duration: lesson.duration,
-              date: (completion as { date: string }).date,
-              daysSince: daysDiff,
-            });
-            break;
-          }
-        }
-      }
-    });
-
-    return revisionsNeeded.sort((a, b) => b.daysSince - a.daysSince);
-  }, [subjects, completedLessons, today]);
-
-  const getRevisionBadgeColor = (daysSince: any) => {
-    if (daysSince === 7)
-      return "bg-yellow-100 text-yellow-800 border-yellow-300";
-    if (daysSince === 14)
-      return "bg-orange-100 text-orange-800 border-orange-300";
-    if (daysSince === 21) return "bg-red-100 text-red-800 border-red-300";
-    if (daysSince === 28)
-      return "bg-purple-100 text-purple-800 border-purple-300";
-    return "bg-gray-100 text-gray-800 border-gray-300";
-  };
-
-  const getRevisionLabel = (daysSince: any) => {
-    if (daysSince === 7) return "1 Week Review";
-    if (daysSince === 14) return "2 Week Review";
-    if (daysSince === 21) return "3 Week Review";
-    if (daysSince === 28) return "4 Week Review";
-    return `${daysSince} Days`;
+  const handleSave = () => {
+    onGlobalLinkChange(currentLink);
+    // A small visual feedback could be added here, e.g., a temporary "Saved!" message.
   };
 
   return (
-    <div className="bg-white/80 rounded-2xl shadow-lg border border-white/30 backdrop-blur-sm p-6">
-      <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center">
+    <div className="p-4 rounded-xl bg-white/50 dark:bg-gray-800/20 backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
+      <h3 className="font-semibold text-slate-700 dark:text-gray-300 flex items-center">
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6 text-blue-600 mr-2"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+          className="h-5 w-5 mr-2 text-teal-500"
+          viewBox="0 0 20 20"
+          fill="currentColor"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
+          <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+          <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
         </svg>
-        Weekly Revision Reminders
-      </h2>
-
-      {lessonsForRevision.length === 0 ? (
-        <p className="text-gray-500 text-sm italic">
-          No lessons need revision this week. Keep completing lessons to build
-          your revision schedule!
-        </p>
-      ) : (
-        <div className="space-y-3">
-          {lessonsForRevision.map((item) => (
-            <div
-              key={item.lessonId}
-              className="p-4 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-grow">
-                  <h3 className="font-medium text-gray-800 mb-1">
-                    {item.lessonName}
-                  </h3>
-                  <div className="flex items-center space-x-2 mb-2">
-                    <span className="text-sm text-blue-700 bg-blue-100 px-2 py-1 rounded-full">
-                      {item.subjectName}
-                    </span>
-                    <span className="text-xs text-gray-500 font-mono">
-                      {item.duration}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-500">
-                      Completed: {new Date(item.date).toLocaleDateString()}
-                    </span>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full border ${getRevisionBadgeColor(
-                        item.daysSince
-                      )}`}
-                    >
-                      {getRevisionLabel(item.daysSince)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {lessonsForRevision.length > 0 && (
-        <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
-          <p className="text-sm text-amber-700">
-            📚 Time for revision! Review these {lessonsForRevision.length}{" "}
-            lesson{lessonsForRevision.length !== 1 ? "s" : ""} to reinforce your
-            learning.
-          </p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const AddTestSeries = ({
-  onAddTest,
-  onDeleteTest,
-  testSeries,
-}: {
-  onAddTest: (test: any) => void;
-  onDeleteTest: (id: string) => void;
-  testSeries: any[];
-}) => {
-  const [testName, setTestName] = useState("");
-  const [testDate, setTestDate] = useState("");
-  const [testTime, setTestTime] = useState("");
-  const [description, setDescription] = useState("");
-
-  const handleSubmit = (e: any) => {
-    e.preventDefault();
-    if (testName.trim() && testDate) {
-      const newTest = {
-        id: crypto.randomUUID(),
-        name: testName.trim(),
-        date: testDate,
-        time: testTime || "09:00",
-        description: description.trim(),
-        created: new Date().toISOString(),
-      };
-      onAddTest(newTest);
-
-      // Reset form
-      setTestName("");
-      setTestDate("");
-      setTestTime("");
-      setDescription("");
-    }
-  };
-
-  return (
-    <div className="bg-white/80 rounded-2xl shadow-lg border border-white/30 backdrop-blur-sm p-6">
-      <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6 text-purple-600 mr-2"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-          />
-        </svg>
-        Add Test Series
-      </h2>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
+        PYQ Link Editor
+      </h3>
+      <div className="mt-2 space-y-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Test Name
+          <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">
+            Global PYQ Link
           </label>
           <input
             type="text"
-            value={testName}
-            onChange={(e) => setTestName(e.target.value)}
-            placeholder="e.g., GATE Mock Test 1, Subject Test"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            required
+            value={currentLink}
+            onChange={(e) => setCurrentLink(e.target.value)}
+            placeholder="https://..."
+            className="w-full input-style"
           />
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Test Date
-            </label>
-            <input
-              type="date"
-              value={testDate}
-              onChange={(e) => setTestDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Test Time (Optional)
-            </label>
-            <input
-              type="time"
-              value={testTime}
-              onChange={(e) => setTestTime(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description (Optional)
-          </label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Additional details about the test..."
-            rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          />
-        </div>
-
         <button
-          type="submit"
-          className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+          onClick={handleSave}
+          className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg"
         >
-          Add Test
+          Save Global Link
         </button>
-      </form>
-
-      {/* Past Tests */}
-      {testSeries && testSeries.length > 0 && (
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold text-gray-700 mb-3">
-            Past Tests
-          </h3>
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {testSeries
-              .filter((test) => {
-                const testDate = new Date(test.date);
-                const today = new Date();
-                testDate.setHours(0, 0, 0, 0);
-                today.setHours(0, 0, 0, 0);
-                return testDate < today;
-              })
-              .sort(
-                (a, b) =>
-                  new Date(b.date).getTime() - new Date(a.date).getTime()
-              )
-              .slice(0, 5)
-              .map((test) => {
-                const testDate = new Date(test.date);
-                const today = new Date();
-                const daysPassed = Math.floor(
-                  (today.getTime() - testDate.getTime()) / (1000 * 60 * 60 * 24)
-                );
-
-                return (
-                  <div
-                    key={test.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
-                  >
-                    <div className="flex-grow">
-                      <h4 className="font-medium text-gray-800">{test.name}</h4>
-                      <div className="flex items-center space-x-2">
-                        <p className="text-sm text-gray-600">
-                          {testDate.toLocaleDateString()}
-                          {test.time && ` at ${test.time}`}
-                        </p>
-                        <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600 border border-gray-300">
-                          {daysPassed === 1
-                            ? "1 day ago"
-                            : `${daysPassed} days ago`}
-                        </span>
-                      </div>
-                      {test.description && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          {test.description}
-                        </p>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => onDeleteTest(test.id)}
-                      className="text-red-500 hover:text-red-700 ml-2"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                );
-              })}
-            {testSeries.filter((test) => {
-              const testDate = new Date(test.date);
-              const today = new Date();
-              testDate.setHours(0, 0, 0, 0);
-              today.setHours(0, 0, 0, 0);
-              return testDate < today;
-            }).length === 0 && (
-              <p className="text-gray-500 text-sm italic">
-                No past tests yet. Completed tests will appear here.
-              </p>
-            )}
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };
 
-const UpcomingTests = ({ testSeries }: { testSeries: any[] }) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const upcomingTests = useMemo(() => {
-    if (!testSeries) return [];
-
-    return testSeries
-      .filter((test) => {
-        const testDate = new Date(test.date);
-        testDate.setHours(0, 0, 0, 0);
-        return testDate >= today;
-      })
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .slice(0, 10); // Show max 10 upcoming tests
-  }, [testSeries, today]);
-
-  const getDaysUntilTest = (testDate: any) => {
-    const test = new Date(testDate);
-    test.setHours(0, 0, 0, 0);
-    const diffTime = test.getTime() - today.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+const MultiSubjectSelector = ({
+  subjects,
+  ongoingSubjects,
+  onOngoingChange,
+}) => {
+  const handleCheck = (subjectName) => {
+    const newOngoing = { ...ongoingSubjects };
+    if (newOngoing[subjectName] !== undefined) {
+      delete newOngoing[subjectName];
+    } else {
+      newOngoing[subjectName] = "1"; // Default to 1 lesson as a string
+    }
+    onOngoingChange(newOngoing);
   };
 
-  const getUrgencyColor = (daysUntil: any) => {
-    if (daysUntil === 0) return "bg-red-100 text-red-800 border-red-300";
-    if (daysUntil === 1)
-      return "bg-orange-100 text-orange-800 border-orange-300";
-    if (daysUntil <= 3)
-      return "bg-yellow-100 text-yellow-800 border-yellow-300";
-    if (daysUntil <= 7) return "bg-blue-100 text-blue-800 border-blue-300";
-    return "bg-green-100 text-green-800 border-green-300";
-  };
-
-  const getUrgencyText = (daysUntil: any) => {
-    if (daysUntil === 0) return "Today";
-    if (daysUntil === 1) return "Tomorrow";
-    return `${daysUntil} days`;
+  const handleTargetChange = (subjectName, value) => {
+    const newOngoing = { ...ongoingSubjects };
+    newOngoing[subjectName] = value;
+    onOngoingChange(newOngoing);
   };
 
   return (
-    <div className="bg-white/80 rounded-2xl shadow-lg border border-white/30 backdrop-blur-sm p-6">
-      <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6 text-orange-600 mr-2"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        Upcoming Tests
-      </h2>
-
-      {upcomingTests.length === 0 ? (
-        <p className="text-gray-500 text-sm italic">
-          No upcoming tests scheduled. Add some test series to stay organized!
-        </p>
-      ) : (
-        <div className="space-y-3">
-          {upcomingTests.map((test) => {
-            const daysUntil = getDaysUntilTest(test.date);
-            return (
-              <div
-                key={test.id}
-                className="p-4 bg-orange-50 rounded-lg border border-orange-200"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-grow">
-                    <h3 className="font-semibold text-gray-800 mb-1">
-                      {test.name}
-                    </h3>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className="text-sm text-gray-600">
-                        {new Date(test.date).toLocaleDateString("en-US", {
-                          weekday: "short",
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                        {test.time && ` at ${test.time}`}
-                      </span>
-                      <span
-                        className={`text-xs px-2 py-1 rounded-full border ${getUrgencyColor(
-                          daysUntil
-                        )}`}
-                      >
-                        {getUrgencyText(daysUntil)}
-                      </span>
-                    </div>
-                    {test.description && (
-                      <p className="text-sm text-gray-600">
-                        {test.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+    <div className="p-4 rounded-xl bg-card-bg backdrop-blur-sm border border-border-color">
+      <h3 className="font-semibold text-slate-700 dark:text-gray-300">
+        Ongoing Subjects & Daily Targets
+      </h3>
+      <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
+        {subjects.map((subject) => (
+          <div key={subject.name} className="flex items-center justify-between">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id={`subject-${subject.name}`}
+                checked={ongoingSubjects[subject.name] !== undefined}
+                onChange={() => handleCheck(subject.name)}
+                className="custom-checkbox mr-3"
+              />
+              <label htmlFor={`subject-${subject.name}`} className="text-sm">
+                {subject.name}
+              </label>
+            </div>
+            {ongoingSubjects[subject.name] !== undefined && (
+              <input
+                type="text"
+                value={ongoingSubjects[subject.name]}
+                onChange={(e) =>
+                  handleTargetChange(subject.name, e.target.value)
+                }
+                className="w-16 text-center p-1 border rounded-md bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
+              />
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
 
 // --- Main App Component ---
 export default function App() {
-  // State initialization
   const [appState, setAppState] = useState(() => {
     try {
       const savedState = localStorage.getItem("gateTrackerState");
@@ -1789,26 +1623,22 @@ export default function App() {
       const initialState = {
         subjects: parseCourseData(courseDataRaw),
         completedLessons: {},
-        dailyTarget: 5,
         streaks: [],
         targetDate: defaultTargetDate.toISOString().split("T")[0],
         testSeries: [],
+        theme: "light",
+        ongoingSubjects: {}, // { "Subject Name": "dailyTargetAsString" }
+        todaysPlan: { date: null, lessonIds: [] },
+        pyqLink: initialPyqLink,
       };
 
       if (savedState) {
         const loaded = JSON.parse(savedState);
-        // Ensure loaded data structure is valid
-        if (loaded.subjects && loaded.completedLessons) {
-          // Ensure lessonsLearned exists
-          if (!loaded.lessonsLearned) {
-            loaded.lessonsLearned = {};
-          }
-          // Ensure testSeries exists for backward compatibility
-          if (!loaded.testSeries) {
-            loaded.testSeries = [];
-          }
-          return loaded;
+        // Ensure pyqLink exists, if not, add it from initial constant
+        if (!loaded.pyqLink) {
+          loaded.pyqLink = initialPyqLink;
         }
+        return { ...initialState, ...loaded };
       }
       return initialState;
     } catch (error) {
@@ -1818,28 +1648,66 @@ export default function App() {
       return {
         subjects: parseCourseData(courseDataRaw),
         completedLessons: {},
-        dailyTarget: 5,
         streaks: [],
         targetDate: defaultTargetDate.toISOString().split("T")[0],
         testSeries: [],
+        theme: "light",
+        ongoingSubjects: {},
+        todaysPlan: { date: null, lessonIds: [] },
+        pyqLink: initialPyqLink,
       };
     }
   });
 
-  const [editingSubjectName, setEditingSubjectName] = useState<string | null>(
-    null
-  );
+  const [history, setHistory] = useState([]);
+  const [editingSubjectName, setEditingSubjectName] = useState(null);
+  const [isAddSubjectModalOpen, setIsAddSubjectModalOpen] = useState(false);
+
+  const updateStateAndHistory = (newState) => {
+    setHistory((prevHistory) => [...prevHistory.slice(-9), appState]);
+    setAppState(newState);
+  };
 
   useEffect(() => {
-    try {
-      localStorage.setItem("gateTrackerState", JSON.stringify(appState));
-    } catch (error) {
-      console.error("Could not save state to local storage", error);
-    }
+    localStorage.setItem("gateTrackerState", JSON.stringify(appState));
   }, [appState]);
 
+  useEffect(() => {
+    document.documentElement.classList.toggle(
+      "dark",
+      appState.theme === "dark"
+    );
+  }, [appState.theme]);
+
+  useEffect(() => {
+    const today = getTodayString();
+    if (appState.todaysPlan.date !== today) {
+      let lessonIdsForToday = [];
+      for (const subjectName in appState.ongoingSubjects) {
+        const target = parseInt(appState.ongoingSubjects[subjectName], 10) || 1;
+        const subject = appState.subjects.find((s) => s.name === subjectName);
+        if (subject) {
+          const nextLessonIds = subject.lessons
+            .filter((l) => !appState.completedLessons[l.id])
+            .slice(0, target)
+            .map((l) => l.id);
+          lessonIdsForToday.push(...nextLessonIds);
+        }
+      }
+      setAppState((prevState) => ({
+        ...prevState,
+        todaysPlan: { date: today, lessonIds: lessonIdsForToday },
+      }));
+    }
+  }, [
+    appState.ongoingSubjects,
+    appState.subjects,
+    appState.completedLessons,
+    appState.todaysPlan.date,
+  ]);
+
   const { totalLessons, totalCompleted } = useMemo(() => {
-    const lessons = appState.subjects.flatMap((s: any) => s.lessons);
+    const lessons = appState.subjects.flatMap((s) => s.lessons);
     return {
       totalLessons: lessons.length,
       totalCompleted: Object.keys(appState.completedLessons).length,
@@ -1850,23 +1718,23 @@ export default function App() {
     totalLessons > 0 ? (totalCompleted / totalLessons) * 100 : 0;
 
   const currentStreak = useMemo(() => {
-    const uniqueDates = [...new Set(appState.streaks)].sort();
+    const uniqueDates = [...new Set(appState.streaks)].sort() as string[];
     if (uniqueDates.length === 0) return 0;
     let streak = 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     for (let i = uniqueDates.length - 1; i >= 0; i--) {
-      const date = new Date(uniqueDates[i] as string);
+      const date = new Date(String(uniqueDates[i]));
       date.setHours(0, 0, 0, 0);
       const diff = (today.getTime() - date.getTime()) / (1000 * 3600 * 24);
       if (diff === streak) {
         streak++;
-      } else {
+      } else if (diff > streak) {
         break;
       }
     }
     if (uniqueDates.length > 0) {
-      const lastDate = new Date(uniqueDates[uniqueDates.length - 1] as string);
+      const lastDate = new Date(String(uniqueDates[uniqueDates.length - 1]));
       lastDate.setHours(0, 0, 0, 0);
       const diffFromToday =
         (today.getTime() - lastDate.getTime()) / (1000 * 3600 * 24);
@@ -1875,108 +1743,186 @@ export default function App() {
     return streak;
   }, [appState.streaks]);
 
-  const handleLessonToggle = useCallback((lessonId: any) => {
-    setAppState((prevState: any) => {
-      const newCompleted = { ...prevState.completedLessons };
+  const handleLessonToggle = useCallback(
+    (lessonId) => {
+      const newState = JSON.parse(JSON.stringify(appState));
+      const { completedLessons, streaks } = newState;
       const today = getTodayString();
-      let newStreaks = [...prevState.streaks];
 
-      if (newCompleted[lessonId]) {
-        const completionDate = newCompleted[lessonId].date;
-        delete newCompleted[lessonId];
-
-        const wasLastOneForDate = !Object.values(newCompleted).some(
-          (lesson: any) => lesson.date === completionDate
-        );
-        if (wasLastOneForDate) {
-          newStreaks = newStreaks.filter((d) => d !== completionDate);
+      if (completedLessons[lessonId]) {
+        const completionDate = completedLessons[lessonId].date;
+        delete completedLessons[lessonId];
+        if (
+          !Object.values(completedLessons).some(
+            (l: any) => l.date === completionDate
+          )
+        ) {
+          const index = streaks.indexOf(completionDate);
+          if (index > -1) streaks.splice(index, 1);
         }
       } else {
-        newCompleted[lessonId] = { date: today };
-        if (!newStreaks.includes(today)) {
-          newStreaks.push(today);
-        }
+        completedLessons[lessonId] = { date: today };
+        if (!streaks.includes(today)) streaks.push(today);
       }
-      return {
-        ...prevState,
-        completedLessons: newCompleted,
-        streaks: newStreaks,
-      };
-    });
-  }, []);
+      updateStateAndHistory(newState);
+    },
+    [appState]
+  );
 
   const handleUpdateSubject = (
-    subjectName: any,
-    updatedLessons: any,
-    updatedLink: any
+    subjectName,
+    updatedLessons,
+    updatedLink,
+    updatedPyqLink
   ) => {
-    setAppState((prevState: any) => {
-      const newSubjects = prevState.subjects.map((s: any) => {
-        if (s.name === subjectName) {
-          return { ...s, lessons: updatedLessons, link: updatedLink };
-        }
-        return s;
-      });
-      return { ...prevState, subjects: newSubjects };
+    const newState = JSON.parse(JSON.stringify(appState));
+    newState.subjects = newState.subjects.map((s) =>
+      s.name === subjectName
+        ? {
+            ...s,
+            lessons: updatedLessons,
+            link: updatedLink,
+            pyqLink: updatedPyqLink,
+          }
+        : s
+    );
+    updateStateAndHistory(newState);
+  };
+
+  const handleAddNewSubject = (newSubject) => {
+    const newState = JSON.parse(JSON.stringify(appState));
+    newState.subjects.push(newSubject);
+    updateStateAndHistory(newState);
+  };
+
+  const handleDeleteSubject = (subjectName) => {
+    const newState = JSON.parse(JSON.stringify(appState));
+    newState.subjects = newState.subjects.filter((s) => s.name !== subjectName);
+    if (newState.ongoingSubjects[subjectName]) {
+      delete newState.ongoingSubjects[subjectName];
+    }
+    updateStateAndHistory(newState);
+  };
+
+  const handleAddTest = (newTest) => {
+    const newState = JSON.parse(JSON.stringify(appState));
+    newState.testSeries.push(newTest);
+    updateStateAndHistory(newState);
+  };
+
+  const handleDeleteTest = (testId) => {
+    const newState = JSON.parse(JSON.stringify(appState));
+    newState.testSeries = newState.testSeries.filter((t) => t.id !== testId);
+    updateStateAndHistory(newState);
+  };
+
+  const handleUndo = () => {
+    if (history.length > 0) {
+      const lastState = history[history.length - 1];
+      setHistory(history.slice(0, -1));
+      setAppState(lastState);
+    }
+  };
+
+  const handleGlobalPyqLinkChange = (newLink) => {
+    updateStateAndHistory({ ...appState, pyqLink: newLink });
+  };
+
+  const toggleTheme = () =>
+    updateStateAndHistory({
+      ...appState,
+      theme: appState.theme === "light" ? "dark" : "light",
     });
-  };
-
-  const handleTargetChange = (e: any) => {
-    let newTarget = parseInt(e.target.value, 10);
-    if (isNaN(newTarget) || newTarget < 1) newTarget = 1;
-    setAppState((prevState: any) => ({ ...prevState, dailyTarget: newTarget }));
-  };
-
-  const handleTargetDateChange = (e: any) => {
-    setAppState((prevState: any) => ({
-      ...prevState,
-      targetDate: e.target.value,
-    }));
-  };
-
-  const handleAddTest = (newTest: any) => {
-    setAppState((prevState: any) => ({
-      ...prevState,
-      testSeries: [...(prevState.testSeries || []), newTest],
-    }));
-  };
-
-  const handleDeleteTest = (testId: any) => {
-    setAppState((prevState: any) => ({
-      ...prevState,
-      testSeries: (prevState.testSeries || []).filter(
-        (test: any) => test.id !== testId
-      ),
-    }));
+  const handleTargetDateChange = (e) =>
+    updateStateAndHistory({ ...appState, targetDate: e.target.value });
+  const handleOngoingSubjectsChange = (newOngoing) => {
+    const newState = { ...appState, ongoingSubjects: newOngoing };
+    newState.todaysPlan = { date: "FORCE_REGEN", lessonIds: [] };
+    updateStateAndHistory(newState);
   };
 
   const editingSubject = useMemo(
-    () => appState.subjects.find((s: any) => s.name === editingSubjectName),
+    () => appState.subjects.find((s) => s.name === editingSubjectName),
     [editingSubjectName, appState.subjects]
   );
-  const dailyCompletions = useMemo(
-    () =>
-      Object.values(appState.completedLessons).filter(
-        (c: any) => c.date === getTodayString()
-      ).length,
-    [appState.completedLessons]
-  );
+
+  const { todaysLessons, completedLast7Days, totalDailyTarget } =
+    useMemo(() => {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const completedInLastWeek = Object.values(
+        appState.completedLessons
+      ).filter((c: any) => new Date(c.date) > sevenDaysAgo).length;
+
+      const allLessons = appState.subjects.flatMap((s) => s.lessons);
+      const lessonsForToday = appState.todaysPlan.lessonIds
+        .map((id) => allLessons.find((l) => l.id === id))
+        .filter(Boolean);
+
+      const dailyTargetSum = (
+        Object.values(appState.ongoingSubjects) as string[]
+      ).reduce((sum: number, val: string) => sum + (parseInt(val, 10) || 0), 0);
+
+      return {
+        todaysLessons: lessonsForToday,
+        completedLast7Days: completedInLastWeek,
+        totalDailyTarget: dailyTargetSum,
+      };
+    }, [appState]);
+
+  const todaysCompletionsCount = useMemo(() => {
+    const today = getTodayString();
+    return Object.values(appState.completedLessons).filter(
+      (l: any) => l.date === today
+    ).length;
+  }, [appState.completedLessons]);
 
   return (
     <>
       <style>{`
-                body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; color: #1e293b; background-image: radial-gradient(#dbeafe 1px, transparent 1px); background-size: 1.5rem 1.5rem; }
+                :root { --bg-color: #f8fafc; --text-color: #1e293b; --card-bg: rgba(255, 255, 255, 0.8); --header-bg: rgba(255, 255, 255, 0.9); --border-color: rgba(203, 213, 225, 0.6); --input-bg: #fff; }
+                html.dark { --bg-color: #0f172a; --text-color: #e2e8f0; --card-bg: rgba(30, 41, 59, 0.5); --header-bg: rgba(30, 41, 59, 0.6); --border-color: rgba(51, 65, 85, 0.5); --input-bg: #1e293b; }
+                body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); background-image: radial-gradient(hsla(210, 40%, 85%, 0.8) 1px, transparent 1px); background-size: 1.5rem 1.5rem; transition: background-color 0.3s, color 0.3s; }
+                html.dark body { background-image: radial-gradient(hsla(222, 47%, 20%, 1) 1px, transparent 1px); }
                 .lesson-list { transition: max-height 0.5s ease-in-out, opacity 0.3s ease-in-out; max-height: 400px; overflow-y: auto; opacity: 1; }
                 .lesson-list.collapsed { max-height: 0; opacity: 0; }
-                .custom-checkbox { -webkit-appearance: none; appearance: none; background-color: #fff; margin: 0; font: inherit; color: currentColor; width: 1.15em; height: 1.15em; border: 0.15em solid #cbd5e1; border-radius: 0.25em; transform: translateY(-0.075em); display: grid; place-content: center; cursor: pointer; }
+                .custom-checkbox { -webkit-appearance: none; appearance: none; background-color: var(--input-bg); margin: 0; font: inherit; color: currentColor; width: 1.15em; height: 1.15em; border: 0.15em solid #cbd5e1; border-radius: 0.25em; transform: translateY(-0.075em); display: grid; place-content: center; cursor: pointer; }
+                html.dark .custom-checkbox { border-color: #4b5563; }
                 .custom-checkbox::before { content: ""; width: 0.65em; height: 0.65em; transform: scale(0); transition: 120ms transform ease-in-out; box-shadow: inset 1em 1em #4f46e5; transform-origin: bottom left; clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%); }
                 .custom-checkbox:checked::before { transform: scale(1); }
+                .input-style { padding: 0.5rem 0.75rem; border-radius: 0.375rem; border: 1px solid #d1d5db; background-color: var(--input-bg); color: var(--text-color); }
+                html.dark .input-style { border-color: #4b5563; }
+                .bg-card-bg { background-color: var(--card-bg); }
+                .border-border-color { border-color: var(--border-color); }
             `}</style>
 
       <div className="container mx-auto p-4 md:p-8 max-w-7xl">
-        <header className="bg-white/60 backdrop-blur-xl p-6 rounded-2xl shadow-lg mb-8 border border-white/30">
+        <header className="relative bg-header-bg backdrop-blur-xl p-6 rounded-2xl shadow-lg mb-8 border border-border-color">
+          <ThemeToggle theme={appState.theme} toggleTheme={toggleTheme} />
+          <div className="absolute top-4 left-4">
+            <button
+              onClick={handleUndo}
+              disabled={history.length === 0}
+              className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 10h10a8 8 0 018 8v2M3 10l6-6m-6 6l6 6"
+                />
+              </svg>
+            </button>
+          </div>
           <div className="text-center">
-            <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-700">
+            <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-700 dark:from-blue-400 dark:to-indigo-500">
               GATE CSE Progress Tracker
             </h1>
           </div>
@@ -1984,14 +1930,14 @@ export default function App() {
 
           <div className="mt-6">
             <div className="flex justify-between mb-1">
-              <span className="text-base font-medium text-indigo-700">
+              <span className="text-base font-medium text-indigo-700 dark:text-indigo-400">
                 Overall Progress
               </span>
-              <span className="text-sm font-bold text-indigo-700">
+              <span className="text-sm font-bold text-indigo-700 dark:text-indigo-400">
                 {overallProgress.toFixed(1)}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-4">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
               <div
                 className="bg-gradient-to-r from-indigo-500 to-purple-600 h-4 rounded-full transition-all duration-500"
                 style={{ width: `${overallProgress}%` }}
@@ -2008,66 +1954,88 @@ export default function App() {
           />
 
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
-            <div className="bg-white/50 p-4 rounded-xl backdrop-blur-sm border border-white/20">
-              <h3 className="font-semibold text-gray-700">Daily Target</h3>
-              <div className="flex items-center justify-center mt-2">
-                <input
-                  type="number"
-                  value={appState.dailyTarget}
-                  onChange={handleTargetChange}
-                  className="w-20 text-center p-1 border rounded-md"
-                />
-                <span className="ml-2 text-gray-600">lessons</span>
-              </div>
-              <p className="text-sm mt-2 text-gray-500">
-                Completed today: {dailyCompletions}/{appState.dailyTarget}
+            <div className="bg-white/50 dark:bg-gray-800/20 p-4 rounded-xl backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
+              <h3 className="font-semibold text-slate-700 dark:text-gray-300">
+                Total Daily Target
+              </h3>
+              <p className="text-4xl font-bold text-indigo-600 dark:text-indigo-400 mt-2">
+                {totalDailyTarget}
+              </p>
+              <p className="text-sm text-slate-600 dark:text-gray-400">
+                Completed today: {todaysCompletionsCount}
               </p>
             </div>
-            <div className="bg-white/50 p-4 rounded-xl backdrop-blur-sm border border-white/20">
-              <h3 className="font-semibold text-gray-700">Current Streak</h3>
-              <p className="text-4xl font-bold text-indigo-600 mt-2">
+            <div className="bg-white/50 dark:bg-gray-800/20 p-4 rounded-xl backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
+              <h3 className="font-semibold text-slate-700 dark:text-gray-300">
+                Current Streak
+              </h3>
+              <p className="text-4xl font-bold text-indigo-600 dark:text-indigo-400 mt-2">
                 {currentStreak} Day{currentStreak !== 1 ? "s" : ""}
               </p>
-              <p className="text-sm text-gray-500">Keep up the momentum!</p>
+              <p className="text-sm text-slate-600 dark:text-gray-400">
+                Keep up the momentum!
+              </p>
             </div>
           </div>
         </header>
-        {/* Lessons Learned and Weekly Revision Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <TodaysCompletedLessons
-            subjects={appState.subjects}
+
+        <MultiSubjectSelector
+          subjects={appState.subjects}
+          ongoingSubjects={appState.ongoingSubjects}
+          onOngoingChange={handleOngoingSubjectsChange}
+        />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 my-6">
+          <TodaysLessons
+            lessons={todaysLessons}
             completedLessons={appState.completedLessons}
+            onLessonToggle={handleLessonToggle}
           />
-          <WeeklyRevision
-            subjects={appState.subjects}
-            completedLessons={appState.completedLessons}
-          />
-        </div>
-        {/* Test Series Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <AddTestSeries
-            testSeries={appState.testSeries}
-            onAddTest={handleAddTest}
+          <RevisionReminder completedLast7Days={completedLast7Days} />
+          <AddTestSeries onAddTest={handleAddTest} />
+          <UpcomingTests
+            tests={appState.testSeries}
             onDeleteTest={handleDeleteTest}
           />
-          <UpcomingTests testSeries={appState.testSeries} />
-        </div>{" "}
+          <PyqLinkEditor
+            globalLink={appState.pyqLink}
+            onGlobalLinkChange={handleGlobalPyqLinkChange}
+          />
+        </div>
+
+        <div className="mb-6 text-center">
+          <button
+            onClick={() => setIsAddSubjectModalOpen(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg"
+          >
+            + Add New Subject
+          </button>
+        </div>
+
         <main className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {appState.subjects.map((subject: any) => (
+          {appState.subjects.map((subject) => (
             <Subject
               key={subject.name}
               subject={subject}
               completedLessons={appState.completedLessons}
               onLessonToggle={handleLessonToggle}
               onEdit={setEditingSubjectName}
+              globalPyqLink={appState.pyqLink}
             />
           ))}
         </main>
+
         <EditSubjectModal
           isOpen={!!editingSubject}
           subject={editingSubject}
           onClose={() => setEditingSubjectName(null)}
           onSave={handleUpdateSubject}
+          onDelete={handleDeleteSubject}
+        />
+        <AddSubjectModal
+          isOpen={isAddSubjectModalOpen}
+          onClose={() => setIsAddSubjectModalOpen(false)}
+          onSave={handleAddNewSubject}
         />
       </div>
     </>
