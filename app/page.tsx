@@ -200,7 +200,6 @@ const Subject = ({
   isExpanded,
   onToggle
 }) => {
-
   const { completedDuration, totalDuration } = useMemo(() => {
     let completed = 0;
     const total = subject.lessons.reduce(
@@ -229,14 +228,31 @@ const Subject = ({
     "https://placehold.co/600x400/cccccc/FFFFFF?text=GATE+CSE";
   const finalPyqLink = subject.pyqLink || globalPyqLink;
 
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit(subject.name);
+  };
+
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggle(subject.name);
+  };
+
+  const handleCardClick = () => {
+    onToggle(subject.name);
+  };
+
   return (
-    <div className="subject-card rounded-2xl shadow-lg border border-white/30 dark:border-gray-700/50 overflow-hidden transition-all duration-300 flex flex-col">
+    <div 
+      className="subject-card rounded-2xl shadow-lg border border-white/30 dark:border-gray-700/50 overflow-hidden transition-all duration-300 flex flex-col cursor-pointer hover:shadow-xl hover:border-indigo-300 dark:hover:border-indigo-500 h-full flex flex-col"
+      onClick={handleCardClick}
+    >
       <img
         src={imageLink}
         alt={subject.name}
-        className="w-full h-32 object-cover"
+        className="w-full h-32 object-cover flex-shrink-0"
       />
-      <div className="p-5 flex flex-col flex-grow">
+      <div className="p-5 flex flex-col flex-grow min-h-0">
         <div className="flex justify-between items-start">
           <div>
             <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">
@@ -251,8 +267,9 @@ const Subject = ({
             </p>
           </div>
           <button
-            onClick={() => onEdit(subject.name)}
+            onClick={handleEditClick}
             className="p-2 rounded-full hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
+            aria-label={`Edit ${subject.name}`}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -273,8 +290,11 @@ const Subject = ({
         <div className="flex items-center mt-4">
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
             <div
-              className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2.5 rounded-full"
+              className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2.5 rounded-full transition-all duration-500"
               style={{ width: `${progress}%` }}
+              aria-valuenow={progress}
+              aria-valuemin={0}
+              aria-valuemax={100}
             ></div>
           </div>
           <span className="text-sm font-semibold text-indigo-700 dark:text-indigo-400 ml-3 w-16 text-right">
@@ -305,27 +325,43 @@ const Subject = ({
           </a>
         </div>
         <button
-          onClick={() => onToggle(subject.name)}
-          className="mt-4 show-lessons-btn font-semibold text-sm w-full text-left transition-colors"
+          onClick={handleToggle}
+          className="mt-4 show-lessons-btn font-semibold text-sm w-full text-left transition-colors text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 flex items-center justify-between"
+          aria-expanded={isExpanded}
+          aria-controls={`lessons-${subject.name.replace(/\s+/g, '-').toLowerCase()}`}
         >
-          {isExpanded
-            ? `Hide ${subject.lessons.length} Lessons`
-            : `Show ${subject.lessons.length} Lessons`}
+          <span>{isExpanded ? 'Hide' : 'Show'} Lessons</span>
+          <svg
+            className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
         </button>
       </div>
       <div
-        className={`transition-all duration-300 overflow-hidden ${
-          isExpanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
+        id={`lessons-${subject.name.replace(/\s+/g, '-').toLowerCase()}`}
+        className={`transition-all duration-300 ease-in-out overflow-hidden ${
+          isExpanded ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
         }`}
+        aria-hidden={!isExpanded}
       >
-        {subject.lessons.map((lesson) => (
-          <Lesson
-            key={lesson.id}
-            lesson={lesson}
-            isCompleted={!!completedLessons[lesson.id]}
-            onToggle={() => onLessonToggle(lesson.id)}
-          />
-        ))}
+        <div className="border-t border-gray-100 dark:border-gray-700 mt-2 pt-2 max-h-[350px] overflow-y-auto pr-2 -mr-2 custom-scrollbar">
+          {subject.lessons.map((lesson) => (
+            <Lesson
+              key={lesson.id}
+              lesson={lesson}
+              isCompleted={!!completedLessons[lesson.id]}
+              onToggle={(e) => {
+                e.stopPropagation();
+                onLessonToggle(lesson.id);
+              }}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

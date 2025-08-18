@@ -7,6 +7,9 @@
   --card-border: #e9ecef;
   --text-primary: #000000;
   --text-secondary: #686b6e;
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
 }
 
 [data-theme="dark"] {
@@ -16,6 +19,9 @@
   --card-border: #2d2d2d;
   --text-primary: #f8f9fa;
   --text-secondary: #adb5bd;
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 0, 0, 0;
+  --background-end-rgb: 0, 0, 0;
 }
 
 /* Apply theme classes */
@@ -24,11 +30,46 @@ body {
   color: var(--text-primary);
   font-family: Arial, Helvetica, sans-serif;
   transition: background-color 0.2s, color 0.2s;
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
 }
 
 /* Ensure text remains visible in both themes */
 h1, h2, h3, h4, h5, h6, p, span, div {
   color: var(--text-primary);
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--card-bg);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--card-border);
+  border-radius: 3px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* For Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--card-border) var(--card-bg);
 }
 
 /* Card styling */
