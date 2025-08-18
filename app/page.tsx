@@ -7,7 +7,6 @@ import { courseDataRaw } from "./data/CourseData";
 import { initialSubjectLinks } from "./data/SubjectLinks";
 import { subjectImages } from "./data/Images";
 
-
 const initialPyqLink =
   "https://practicepaper.in/gate-cse/topic-wise-practice-of-gate-cse-previous-year-papers";
 
@@ -67,10 +66,10 @@ const ThemeToggle = ({ theme, toggleTheme }) => {
   // Apply theme class to html element when theme changes
   React.useEffect(() => {
     const html = document.documentElement;
-    if (theme === 'dark') {
-      html.setAttribute('data-theme', 'dark');
+    if (theme === "dark") {
+      html.setAttribute("data-theme", "dark");
     } else {
-      html.removeAttribute('data-theme');
+      html.removeAttribute("data-theme");
     }
   }, [theme]);
 
@@ -78,40 +77,40 @@ const ThemeToggle = ({ theme, toggleTheme }) => {
     <button
       onClick={toggleTheme}
       className="absolute top-4 right-4 p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:opacity-80 transition-opacity"
-      aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+      aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
     >
       {theme === "light" ? (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-6 w-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-        />
-      </svg>
-    ) : (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-6 w-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-        />
-      </svg>
-    )}
-  </button>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+          />
+        </svg>
+      ) : (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+          />
+        </svg>
+      )}
+    </button>
   );
 };
 
@@ -156,6 +155,7 @@ const MotivationalQuote = () => {
 
 const Lesson = ({ lesson, isCompleted, onToggle }) => (
   <div
+    onClick={(e) => e.stopPropagation()}
     className={`flex items-center justify-between p-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0 hover:bg-indigo-50/50 dark:hover:bg-gray-800/50 transition-colors ${
       isCompleted ? "completed-lesson" : ""
     }`}
@@ -166,6 +166,7 @@ const Lesson = ({ lesson, isCompleted, onToggle }) => (
         id={`lesson-check-${lesson.id}`}
         className="custom-checkbox mr-4 flex-shrink-0"
         checked={isCompleted}
+        onClick={(e) => e.stopPropagation()}
         onChange={onToggle}
       />
       <label
@@ -173,13 +174,15 @@ const Lesson = ({ lesson, isCompleted, onToggle }) => (
         onClick={(e: React.MouseEvent<HTMLLabelElement>) => {
           const target = e.target as HTMLElement | null;
           if (target && target.nodeName !== "INPUT") {
-            onToggle();
+            e.stopPropagation();
+            // Pass the event upwards so the parent can stop propagation too
+            onToggle(e as any);
           }
         }}
         className={`cursor-pointer text-sm truncate w-full !text-inherit ${
           isCompleted
-            ? 'text-gray-500 dark:text-gray-400 line-through'
-            : 'text-slate-700 dark:text-white'
+            ? "text-gray-500 dark:text-gray-400 line-through"
+            : "text-slate-700 dark:text-white"
         }`}
       >
         {lesson.name}
@@ -198,7 +201,7 @@ const Subject = ({
   onEdit,
   globalPyqLink,
   isExpanded,
-  onToggle
+  onToggle,
 }) => {
   const { completedDuration, totalDuration } = useMemo(() => {
     let completed = 0;
@@ -243,10 +246,7 @@ const Subject = ({
   };
 
   return (
-    <div 
-      className="subject-card rounded-2xl shadow-lg border border-white/30 dark:border-gray-700/50 overflow-hidden transition-all duration-300 flex flex-col cursor-pointer hover:shadow-xl hover:border-indigo-300 dark:hover:border-indigo-500 h-full flex flex-col"
-      onClick={handleCardClick}
-    >
+    <div className="subject-card rounded-2xl shadow-lg border border-white/30 dark:border-gray-700/50 overflow-hidden transition-all duration-300 flex flex-col hover:shadow-xl hover:border-indigo-300 dark:hover:border-indigo-500 h-full flex flex-col">
       <img
         src={imageLink}
         alt={subject.name}
@@ -328,24 +328,33 @@ const Subject = ({
           onClick={handleToggle}
           className="mt-4 show-lessons-btn font-semibold text-sm w-full text-left transition-colors text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 flex items-center justify-between"
           aria-expanded={isExpanded}
-          aria-controls={`lessons-${subject.name.replace(/\s+/g, '-').toLowerCase()}`}
+          aria-controls={`lessons-${subject.name
+            .replace(/\s+/g, "-")
+            .toLowerCase()}`}
         >
-          <span>{isExpanded ? 'Hide' : 'Show'} Lessons</span>
+          <span>{isExpanded ? "Hide" : "Show"} Lessons</span>
           <svg
-            className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+            className={`w-4 h-4 transition-transform duration-300 ${
+              isExpanded ? "rotate-180" : ""
+            }`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
             xmlns="http://www.w3.org/2000/svg"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
           </svg>
         </button>
       </div>
       <div
-        id={`lessons-${subject.name.replace(/\s+/g, '-').toLowerCase()}`}
+        id={`lessons-${subject.name.replace(/\s+/g, "-").toLowerCase()}`}
         className={`transition-all duration-300 ease-in-out overflow-hidden ${
-          isExpanded ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
+          isExpanded ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
         }`}
         aria-hidden={!isExpanded}
       >
@@ -579,6 +588,73 @@ const EditSubjectModal = ({ subject, isOpen, onClose, onSave, onDelete }) => {
           </div>
           <div>
             <h3 className="text-lg font-semibold mt-4 mb-2 dark:text-white">
+              Lessons
+            </h3>
+            <div className="space-y-2">
+              {lessons.length > 0 ? (
+                lessons.map((l, idx) => (
+                  <div key={l.id} className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={l.name}
+                      onChange={(e) => {
+                        const newLessons = [...lessons];
+                        newLessons[idx] = {
+                          ...newLessons[idx],
+                          name: e.target.value,
+                        };
+                        setLessons(newLessons);
+                      }}
+                      className="flex-1 input-style"
+                      placeholder="Lesson name"
+                    />
+                    <input
+                      type="text"
+                      value={l.duration}
+                      onChange={(e) => {
+                        const newLessons = [...lessons];
+                        newLessons[idx] = {
+                          ...newLessons[idx],
+                          duration: e.target.value,
+                        };
+                        setLessons(newLessons);
+                      }}
+                      className="w-28 text-center input-style font-mono"
+                      placeholder="1h 30m"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newLessons = lessons.filter((_, i) => i !== idx);
+                        setLessons(newLessons);
+                      }}
+                      className="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-md"
+                      aria-label={`Delete ${l.name}`}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  No lessons yet. Add some below or paste in bulk.
+                </p>
+              )}
+            </div>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold mt-4 mb-2 dark:text-white">
               Add Multiple Lessons
             </h3>
             <textarea
@@ -738,7 +814,11 @@ const AddSubjectModal = ({ isOpen, onClose, onSave }) => {
   );
 };
 
-const TodaysLessons = ({ lessons, completedLessons, onLessonToggle }) => (
+const TodaysLessons = ({
+  lessonsBySubject,
+  completedLessons,
+  onLessonToggle,
+}) => (
   <div className="p-4 rounded-xl bg-white/50 dark:bg-gray-800/20 backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
     <h3 className="font-semibold text-slate-700 dark:text-gray-300 flex items-center">
       <svg
@@ -756,16 +836,30 @@ const TodaysLessons = ({ lessons, completedLessons, onLessonToggle }) => (
       Today's Lessons
     </h3>
     <div className="mt-2 text-sm text-slate-600 dark:text-gray-400">
-      {lessons.length > 0 ? (
-        <div className="space-y-1">
-          {lessons.map((l) => (
-            <Lesson
-              key={l.id}
-              lesson={l}
-              isCompleted={!!completedLessons[l.id]}
-              onToggle={() => onLessonToggle(l.id)}
-            />
-          ))}
+      {Object.keys(lessonsBySubject as Record<string, any[]>).length > 0 ? (
+        <div className="space-y-4">
+          {Object.entries(lessonsBySubject as Record<string, any[]>).map(
+            ([subjectName, lessons]) => (
+              <div
+                key={subjectName}
+                className="pl-3 border-l-2 border-indigo-500"
+              >
+                <h4 className="text-sm md:text-base font-semibold text-slate-800 dark:text-slate-200 mb-2">
+                  {subjectName}
+                </h4>
+                <div className="space-y-1">
+                  {(lessons as any[]).map((l: any) => (
+                    <Lesson
+                      key={l.id}
+                      lesson={l}
+                      isCompleted={!!completedLessons[l.id]}
+                      onToggle={() => onLessonToggle(l.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )
+          )}
         </div>
       ) : (
         "Select ongoing subjects and set targets to see your lessons for today!"
@@ -1040,11 +1134,11 @@ const MultiSubjectSelector = ({
 // --- Main App Component ---
 export default function App() {
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
-  
+
   const handleSubjectToggle = (subjectName: string) => {
-    setExpandedSubject(prev => prev === subjectName ? null : subjectName);
+    setExpandedSubject((prev) => (prev === subjectName ? null : subjectName));
   };
-  
+
   const [appState, setAppState] = useState(() => {
     try {
       const savedState = localStorage.getItem("gateTrackerState");
@@ -1093,10 +1187,10 @@ export default function App() {
   // Apply theme on initial load and when it changes
   useEffect(() => {
     const html = document.documentElement;
-    if (appState.theme === 'dark') {
-      html.setAttribute('data-theme', 'dark');
+    if (appState.theme === "dark") {
+      html.setAttribute("data-theme", "dark");
     } else {
-      html.removeAttribute('data-theme');
+      html.removeAttribute("data-theme");
     }
   }, [appState.theme]);
 
@@ -1287,29 +1381,41 @@ export default function App() {
     [editingSubjectName, appState.subjects]
   );
 
-  const { todaysLessons, completedLast7Days, totalDailyTarget } =
-    useMemo(() => {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const completedInLastWeek = Object.values(
-        appState.completedLessons
-      ).filter((c: any) => new Date(c.date) > sevenDaysAgo).length;
+  const {
+    todaysLessons,
+    lessonsBySubject,
+    completedLast7Days,
+    totalDailyTarget,
+  } = useMemo(() => {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const completedInLastWeek = Object.values(appState.completedLessons).filter(
+      (c: any) => new Date(c.date) > sevenDaysAgo
+    ).length;
 
-      const allLessons = appState.subjects.flatMap((s) => s.lessons);
-      const lessonsForToday = appState.todaysPlan.lessonIds
-        .map((id) => allLessons.find((l) => l.id === id))
-        .filter(Boolean);
+    const allLessons = appState.subjects.flatMap((s) => s.lessons);
+    const lessonsForToday = appState.todaysPlan.lessonIds
+      .map((id) => allLessons.find((l) => l.id === id))
+      .filter(Boolean);
 
-      const dailyTargetSum = (
-        Object.values(appState.ongoingSubjects) as string[]
-      ).reduce((sum: number, val: string) => sum + (parseInt(val, 10) || 0), 0);
+    const lessonIdSet = new Set(appState.todaysPlan.lessonIds);
+    const grouped: Record<string, any[]> = {} as any;
+    appState.subjects.forEach((s) => {
+      const subset = s.lessons.filter((l) => lessonIdSet.has(l.id));
+      if (subset.length) grouped[s.name] = subset;
+    });
 
-      return {
-        todaysLessons: lessonsForToday,
-        completedLast7Days: completedInLastWeek,
-        totalDailyTarget: dailyTargetSum,
-      };
-    }, [appState]);
+    const dailyTargetSum = (
+      Object.values(appState.ongoingSubjects) as string[]
+    ).reduce((sum: number, val: string) => sum + (parseInt(val, 10) || 0), 0);
+
+    return {
+      todaysLessons: lessonsForToday,
+      lessonsBySubject: grouped,
+      completedLast7Days: completedInLastWeek,
+      totalDailyTarget: dailyTargetSum,
+    };
+  }, [appState]);
 
   const todaysCompletionsCount = useMemo(() => {
     const today = getTodayString();
@@ -1428,7 +1534,7 @@ export default function App() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 my-6">
           <TodaysLessons
-            lessons={todaysLessons}
+            lessonsBySubject={lessonsBySubject}
             completedLessons={appState.completedLessons}
             onLessonToggle={handleLessonToggle}
           />
