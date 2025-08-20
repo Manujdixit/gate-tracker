@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Gate Tracker",
   description: "A Progress Tracker for Gate CSE",
+    generator: 'v0.app'
 };
 
 export default function RootLayout({

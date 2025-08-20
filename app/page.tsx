@@ -1,77 +1,116 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 
 // --- Initial Data & Configuration ---
-import { courseDataRaw } from "./data/CourseData";
-import { initialSubjectLinks } from "./data/SubjectLinks";
-import { subjectImages } from "./data/Images";
+import { courseDataRaw } from "./data/CourseData"
+import { initialSubjectLinks } from "./data/SubjectLinks"
+import { subjectImages } from "./data/Images"
 
-const initialPyqLink =
-  "https://practicepaper.in/gate-cse/topic-wise-practice-of-gate-cse-previous-year-papers";
+const initialPyqLink = "https://practicepaper.in/gate-cse/topic-wise-practice-of-gate-cse-previous-year-papers"
 
 // --- Helper Functions ---
-const getTodayString = () => new Date().toISOString().split("T")[0];
+const getTodayString = () => new Date().toISOString().split("T")[0]
 
 const parseDurationToMinutes = (durationStr = "0m") => {
-  let totalMinutes = 0;
-  const hoursMatch = durationStr.match(/(\d+)h/);
-  const minutesMatch = durationStr.match(/(\d+)m/);
-  if (hoursMatch) totalMinutes += parseInt(hoursMatch[1], 10) * 60;
-  if (minutesMatch) totalMinutes += parseInt(minutesMatch[1], 10);
-  return totalMinutes;
-};
+  let totalMinutes = 0
+  const hoursMatch = durationStr.match(/(\d+)h/)
+  const minutesMatch = durationStr.match(/(\d+)m/)
+  if (hoursMatch) totalMinutes += Number.parseInt(hoursMatch[1], 10) * 60
+  if (minutesMatch) totalMinutes += Number.parseInt(minutesMatch[1], 10)
+  return totalMinutes
+}
 
 const formatMinutesToHM = (minutes: any) => {
-  if (isNaN(minutes) || minutes < 0) return "0h 0m";
-  const h = Math.floor(minutes / 60);
-  const m = Math.round(minutes % 60);
-  return `${h}h ${m}m`;
-};
+  if (isNaN(minutes) || minutes < 0) return "0h 0m"
+  const h = Math.floor(minutes / 60)
+  const m = Math.round(minutes % 60)
+  return `${h}h ${m}`
+}
+
+const getSpacedRepetitionInterval = (reviewCount: number): number => {
+  // Spaced repetition intervals: 3 days, 7 days, 30 days, 90 days, 180 days
+  const intervals = [3, 7, 30, 90, 180]
+  return intervals[Math.min(reviewCount, intervals.length - 1)]
+}
+
+const calculateNextReviewDate = (completedDate: string, reviewCount: number): string => {
+  const interval = getSpacedRepetitionInterval(reviewCount)
+  const date = new Date(completedDate)
+  date.setDate(date.getDate() + interval)
+  return date.toISOString().split("T")[0]
+}
+
+const scheduleRevision = (lessonId: string, completedDate: string, currentRevisionSchedule: any) => {
+  const existingRevision = currentRevisionSchedule[lessonId]
+  const reviewCount = existingRevision ? existingRevision.reviewCount + 1 : 0
+
+  return {
+    ...currentRevisionSchedule,
+    [lessonId]: {
+      completedDate,
+      nextReviewDate: calculateNextReviewDate(completedDate, reviewCount),
+      reviewCount,
+      interval: getSpacedRepetitionInterval(reviewCount),
+    },
+  }
+}
+
+const isLessonDueForRevisionToday = (lessonId: string, revisionSchedule: any): boolean => {
+  const today = getTodayString()
+  const revision = revisionSchedule[lessonId]
+  return revision && revision.nextReviewDate === today
+}
+
+const getRevisionsForDate = (revisionSchedule: any, targetDate: string) => {
+  return Object.entries(revisionSchedule)
+    .filter(([_, revision]: [string, any]) => revision.nextReviewDate === targetDate)
+    .map(([lessonId, _]) => lessonId)
+}
 
 const parseCourseData = (rawData: any) => {
-  const lines = rawData.trim().split("\n");
-  const subjects = [];
-  let currentSubject = null;
+  const lines = rawData.trim().split("\n")
+  const subjects = []
+  let currentSubject = null
   lines.forEach((line) => {
-    line = line.trim();
-    if (!line) return;
+    line = line.trim()
+    if (!line) return
     if (line.includes("•")) {
       if (currentSubject) {
-        const [name, duration] = line.split("•").map((s) => s.trim());
+        const [name, duration] = line.split("•").map((s) => s.trim())
         currentSubject.lessons.push({
           id: crypto.randomUUID(),
           name,
           duration,
           durationInMinutes: parseDurationToMinutes(duration),
-        });
+        })
       }
     } else {
-      if (currentSubject) subjects.push(currentSubject);
+      if (currentSubject) subjects.push(currentSubject)
       currentSubject = {
         name: line,
         lessons: [],
         link: initialSubjectLinks[line] || "",
         pyqLink: "", // Add individual PYQ link property
-      };
+      }
     }
-  });
-  if (currentSubject) subjects.push(currentSubject);
-  return subjects;
-};
+  })
+  if (currentSubject) subjects.push(currentSubject)
+  return subjects
+}
 
 // --- Child Components ---
 
 const ThemeToggle = ({ theme, toggleTheme }) => {
   // Apply theme class to html element when theme changes
   React.useEffect(() => {
-    const html = document.documentElement;
+    const html = document.documentElement
     if (theme === "dark") {
-      html.setAttribute("data-theme", "dark");
+      html.setAttribute("data-theme", "dark")
     } else {
-      html.removeAttribute("data-theme");
+      html.removeAttribute("data-theme")
     }
-  }, [theme]);
+  }, [theme])
 
   return (
     <button
@@ -111,11 +150,11 @@ const ThemeToggle = ({ theme, toggleTheme }) => {
         </svg>
       )}
     </button>
-  );
-};
+  )
+}
 
 const MotivationalQuote = () => {
-  const [quote, setQuote] = useState("");
+  const [quote, setQuote] = useState("")
   const quotes = [
     "The secret of getting ahead is getting started.",
     "Believe you can and you're halfway there.",
@@ -127,31 +166,26 @@ const MotivationalQuote = () => {
     "Don't watch the clock; do what it does. Keep going.",
     "The only way to do great work is to love what you do.",
     "Hardships often prepare ordinary people for an extraordinary destiny.",
-  ];
+  ]
 
   useEffect(() => {
-    const today = getTodayString();
-    const savedQuoteData = JSON.parse(localStorage.getItem("dailyQuote"));
+    const today = getTodayString()
+    const savedQuoteData = JSON.parse(localStorage.getItem("dailyQuote"))
     if (savedQuoteData && savedQuoteData.date === today) {
-      setQuote(savedQuoteData.quote);
+      setQuote(savedQuoteData.quote)
     } else {
-      const newQuote = quotes[Math.floor(Math.random() * quotes.length)];
-      setQuote(newQuote);
-      localStorage.setItem(
-        "dailyQuote",
-        JSON.stringify({ quote: newQuote, date: today })
-      );
+      const newQuote = quotes[Math.floor(Math.random() * quotes.length)]
+      setQuote(newQuote)
+      localStorage.setItem("dailyQuote", JSON.stringify({ quote: newQuote, date: today }))
     }
-  }, []);
+  }, [])
 
   return (
     <div className="text-center mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-100 rounded-lg border border-blue-200 dark:from-blue-900/50 dark:to-indigo-900/50 dark:border-blue-800/50">
-      <p className="text-lg font-medium text-slate-700 dark:text-gray-300">
-        "{quote}"
-      </p>
+      <p className="text-lg font-medium text-slate-700 dark:text-gray-300">"{quote}"</p>
     </div>
-  );
-};
+  )
+}
 
 const Lesson = ({ lesson, isCompleted, onToggle }) => (
   <div
@@ -172,17 +206,15 @@ const Lesson = ({ lesson, isCompleted, onToggle }) => (
       <label
         htmlFor={`lesson-check-${lesson.id}`}
         onClick={(e: React.MouseEvent<HTMLLabelElement>) => {
-          const target = e.target as HTMLElement | null;
+          const target = e.target as HTMLElement | null
           if (target && target.nodeName !== "INPUT") {
-            e.stopPropagation();
+            e.stopPropagation()
             // Pass the event upwards so the parent can stop propagation too
-            onToggle(e as any);
+            onToggle(e as any)
           }
         }}
         className={`cursor-pointer text-sm truncate w-full !text-inherit ${
-          isCompleted
-            ? "text-gray-500 dark:text-gray-400 line-through"
-            : "text-slate-700 dark:text-white"
+          isCompleted ? "text-gray-500 dark:text-gray-400 line-through" : "text-slate-700 dark:text-white"
         }`}
       >
         {lesson.name}
@@ -192,78 +224,59 @@ const Lesson = ({ lesson, isCompleted, onToggle }) => (
       {lesson.duration}
     </span>
   </div>
-);
+)
 
-const Subject = ({
-  subject,
-  completedLessons,
-  onLessonToggle,
-  onEdit,
-  globalPyqLink,
-  isExpanded,
-  onToggle,
-}) => {
+const Subject = ({ subject, completedLessons, onLessonToggle, onEdit, globalPyqLink, isExpanded, onToggle }) => {
   const { completedDuration, totalDuration } = useMemo(() => {
-    let completed = 0;
-    const total = subject.lessons.reduce(
-      (sum, l) => sum + l.durationInMinutes,
-      0
-    );
+    let completed = 0
+    const total = subject.lessons.reduce((sum, l) => sum + l.durationInMinutes, 0)
     subject.lessons.forEach((l) => {
       if (completedLessons[l.id]) {
-        completed += l.durationInMinutes;
+        completed += l.durationInMinutes
       }
-    });
-    return { completedDuration: completed, totalDuration: total };
-  }, [subject.lessons, completedLessons]);
+    })
+    return { completedDuration: completed, totalDuration: total }
+  }, [subject.lessons, completedLessons])
 
   const completedCount = useMemo(
     () => subject.lessons.filter((l) => !!completedLessons[l.id]).length,
-    [subject.lessons, completedLessons]
-  );
+    [subject.lessons, completedLessons],
+  )
 
-  const progress =
-    subject.lessons.length > 0
-      ? (completedCount / subject.lessons.length) * 100
-      : 0;
-  const imageLink =
-    subjectImages[subject.name] ||
-    "https://placehold.co/600x400/cccccc/FFFFFF?text=GATE+CSE";
-  const finalPyqLink = subject.pyqLink || globalPyqLink;
+  const progress = subject.lessons.length > 0 ? (completedCount / subject.lessons.length) * 100 : 0
+  const imageLink = subjectImages[subject.name] || "https://placehold.co/600x400/cccccc/FFFFFF?text=GATE+CSE"
+  const finalPyqLink = subject.pyqLink || globalPyqLink
 
   const handleEditClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onEdit(subject.name);
-  };
+    e.stopPropagation()
+    onEdit(subject.name)
+  }
 
   const handleToggle = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onToggle(subject.name);
-  };
+    e.stopPropagation()
+    onToggle(subject.name)
+  }
 
   const handleCardClick = () => {
-    onToggle(subject.name);
-  };
+    onToggle(subject.name)
+  }
 
   return (
     <div className="subject-card rounded-2xl shadow-lg border border-white/30 dark:border-gray-700/50 overflow-hidden transition-all duration-300 flex flex-col hover:shadow-xl hover:border-indigo-300 dark:hover:border-indigo-500 h-full flex flex-col">
       <img
-        src={imageLink}
+        src={imageLink || "/placeholder.svg"}
         alt={subject.name}
         className="w-full h-32 object-cover flex-shrink-0"
       />
       <div className="p-5 flex flex-col flex-grow min-h-0">
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">
-              {subject.name}
-            </h2>
+            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">{subject.name}</h2>
             <p className="text-sm text-slate-600 dark:text-gray-400 mt-1">
               {completedCount} / {subject.lessons.length} lessons
             </p>
             <p className="text-xs text-slate-500 dark:text-gray-500 mt-1 font-mono">
-              {formatMinutesToHM(completedDuration)} /{" "}
-              {formatMinutesToHM(totalDuration)}
+              {formatMinutesToHM(completedDuration)} / {formatMinutesToHM(totalDuration)}
             </p>
           </div>
           <button
@@ -328,26 +341,17 @@ const Subject = ({
           onClick={handleToggle}
           className="mt-4 show-lessons-btn font-semibold text-sm w-full text-left transition-colors text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 flex items-center justify-between"
           aria-expanded={isExpanded}
-          aria-controls={`lessons-${subject.name
-            .replace(/\s+/g, "-")
-            .toLowerCase()}`}
+          aria-controls={`lessons-${subject.name.replace(/\s+/g, "-").toLowerCase()}`}
         >
           <span>{isExpanded ? "Hide" : "Show"} Lessons</span>
           <svg
-            className={`w-4 h-4 transition-transform duration-300 ${
-              isExpanded ? "rotate-180" : ""
-            }`}
+            className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
             xmlns="http://www.w3.org/2000/svg"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>
       </div>
@@ -365,94 +369,79 @@ const Subject = ({
               lesson={lesson}
               isCompleted={!!completedLessons[lesson.id]}
               onToggle={(e) => {
-                e.stopPropagation();
-                onLessonToggle(lesson.id);
+                e.stopPropagation()
+                onLessonToggle(lesson.id)
               }}
             />
           ))}
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-const PacingTracker = ({
-  totalLessons,
-  totalCompleted,
-  targetDate,
-  onTargetDateChange,
-  streaks,
-}) => {
+const PacingTracker = ({ totalLessons, totalCompleted, targetDate, onTargetDateChange, streaks }) => {
   const paceInfo = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const target = new Date(targetDate);
-    target.setHours(0, 0, 0, 0);
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const target = new Date(targetDate)
+    target.setHours(0, 0, 0, 0)
 
-    const lessonsRemaining = totalLessons - totalCompleted;
+    const lessonsRemaining = totalLessons - totalCompleted
     if (lessonsRemaining <= 0) {
       return {
         status: "Completed",
         color: "text-green-500 dark:text-green-400",
         projection: "Congratulations!",
         requiredPace: 0,
-      };
+      }
     }
 
-    const daysRemaining = Math.max(
-      0,
-      Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-    );
+    const daysRemaining = Math.max(0, Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
     if (daysRemaining <= 0) {
       return {
         status: "Past Due",
         color: "text-red-500 dark:text-red-400",
         projection: "Target date is in the past.",
-        requiredPace: Infinity,
-      };
+        requiredPace: Number.POSITIVE_INFINITY,
+      }
     }
 
-    const requiredPace = lessonsRemaining / daysRemaining;
+    const requiredPace = lessonsRemaining / daysRemaining
 
-    const firstCompletionDate =
-      streaks.length > 0 ? new Date(streaks.sort()[0]) : today;
-    firstCompletionDate.setHours(0, 0, 0, 0);
+    const firstCompletionDate = streaks.length > 0 ? new Date(streaks.sort()[0]) : today
+    firstCompletionDate.setHours(0, 0, 0, 0)
     const daysSinceStart = Math.max(
       1,
-      Math.ceil(
-        (today.getTime() - firstCompletionDate.getTime()) /
-          (1000 * 60 * 60 * 24)
-      ) + 1
-    );
-    const currentPace = totalCompleted / daysSinceStart;
+      Math.ceil((today.getTime() - firstCompletionDate.getTime()) / (1000 * 60 * 60 * 24)) + 1,
+    )
+    const currentPace = totalCompleted / daysSinceStart
 
-    let projection = "N/A";
+    let projection = "N/A"
     if (currentPace > 0) {
-      const daysToComplete = lessonsRemaining / currentPace;
-      const projectedDate = new Date();
-      projectedDate.setDate(today.getDate() + daysToComplete);
-      projection = projectedDate.toLocaleDateString("en-CA"); // YYYY-MM-DD format
+      const daysToComplete = lessonsRemaining / currentPace
+      const projectedDate = new Date()
+      projectedDate.setDate(today.getDate() + daysToComplete)
+      projection = projectedDate.toLocaleDateString("en-CA") // YYYY-MM-DD format
     }
 
-    let status = "On Track";
-    let color = "text-green-500 dark:text-green-400";
+    let status = "On Track"
+    let color = "text-green-500 dark:text-green-400"
     if (currentPace < requiredPace * 0.9) {
-      status = "Lagging Behind";
-      color = "text-red-500 dark:text-red-400";
+      status = "Lagging Behind"
+      color = "text-red-500 dark:text-red-400"
     } else if (currentPace > requiredPace * 1.1) {
-      status = "Ahead";
-      color = "text-blue-500 dark:text-blue-400";
+      status = "Ahead"
+      color = "text-blue-500 dark:text-blue-400"
     }
 
-    return { status, color, projection, requiredPace: requiredPace.toFixed(2) };
-  }, [totalLessons, totalCompleted, targetDate, streaks]);
+    return { status, color, projection, requiredPace: requiredPace.toFixed(2) }
+  }, [totalLessons, totalCompleted, targetDate, streaks])
 
   return (
     <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
       <div className="bg-white/50 dark:bg-gray-800/20 p-4 rounded-xl backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
-        <h3 className="font-semibold text-slate-700 dark:text-gray-300">
-          Target Date
-        </h3>
+        <h3 className="font-semibold text-slate-700 dark:text-gray-300">Target Date</h3>
         <input
           type="date"
           value={targetDate}
@@ -464,95 +453,80 @@ const PacingTracker = ({
         </p>
       </div>
       <div className="bg-white/50 dark:bg-gray-800/20 p-4 rounded-xl backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
-        <h3 className="font-semibold text-slate-700 dark:text-gray-300">
-          Pacing Status
-        </h3>
-        <p className={`text-3xl font-bold mt-2 ${paceInfo.color}`}>
-          {paceInfo.status}
-        </p>
+        <h3 className="font-semibold text-slate-700 dark:text-gray-300">Pacing Status</h3>
+        <p className={`text-3xl font-bold mt-2 ${paceInfo.color}`}>{paceInfo.status}</p>
       </div>
       <div className="bg-white/50 dark:bg-gray-800/20 p-4 rounded-xl backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
-        <h3 className="font-semibold text-slate-700 dark:text-gray-300">
-          Projected Completion
-        </h3>
-        <p className="text-2xl font-bold text-slate-800 dark:text-gray-200 mt-2">
-          {paceInfo.projection}
-        </p>
+        <h3 className="font-semibold text-slate-700 dark:text-gray-300">Projected Completion</h3>
+        <p className="text-2xl font-bold text-slate-800 dark:text-gray-200 mt-2">{paceInfo.projection}</p>
       </div>
     </div>
-  );
-};
+  )
+}
 
 const EditSubjectModal = ({ subject, isOpen, onClose, onSave, onDelete }) => {
-  const [lessons, setLessons] = useState([]);
-  const [link, setLink] = useState("");
-  const [pyqLink, setPyqLink] = useState("");
-  const [bulkLessons, setBulkLessons] = useState("");
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [lessons, setLessons] = useState([])
+  const [link, setLink] = useState("")
+  const [pyqLink, setPyqLink] = useState("")
+  const [bulkLessons, setBulkLessons] = useState("")
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   useEffect(() => {
     if (subject) {
-      setLessons(JSON.parse(JSON.stringify(subject.lessons))); // Deep copy
-      setLink(subject.link || "");
-      setPyqLink(subject.pyqLink || "");
-      setBulkLessons("");
-      setShowDeleteConfirm(false);
+      setLessons(JSON.parse(JSON.stringify(subject.lessons))) // Deep copy
+      setLink(subject.link || "")
+      setPyqLink(subject.pyqLink || "")
+      setBulkLessons("")
+      setShowDeleteConfirm(false)
     }
-  }, [subject]);
+  }, [subject])
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   const handleSave = () => {
-    let allLessons = [...lessons];
+    let allLessons = [...lessons]
     if (bulkLessons.trim()) {
       const newLessons = bulkLessons
         .trim()
         .split("\n")
         .map((line) => {
           if (line.includes("•")) {
-            const [name, duration] = line.split("•").map((s) => s.trim());
+            const [name, duration] = line.split("•").map((s) => s.trim())
             return {
               id: crypto.randomUUID(),
               name,
               duration,
               durationInMinutes: parseDurationToMinutes(duration),
-            };
+            }
           }
-          return null;
+          return null
         })
-        .filter(Boolean);
-      allLessons = [...allLessons, ...newLessons];
+        .filter(Boolean)
+      allLessons = [...allLessons, ...newLessons]
     }
     const updatedLessons = allLessons.map((l) => ({
       ...l,
       durationInMinutes: parseDurationToMinutes(l.duration),
-    }));
-    onSave(subject.name, updatedLessons, link, pyqLink);
-    onClose();
-  };
+    }))
+    onSave(subject.name, updatedLessons, link, pyqLink)
+    onClose()
+  }
 
   const handleDeleteSubject = () => {
-    onDelete(subject.name);
-    onClose();
-  };
+    onDelete(subject.name)
+    onClose()
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
-          <h2 className="text-xl font-bold dark:text-white">
-            Edit {subject?.name}
-          </h2>
+          <h2 className="text-xl font-bold dark:text-white">Edit {subject?.name}</h2>
           <button
             onClick={() => setShowDeleteConfirm(true)}
             className="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path
                 fillRule="evenodd"
                 d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
@@ -563,9 +537,7 @@ const EditSubjectModal = ({ subject, isOpen, onClose, onSave, onDelete }) => {
         </div>
         <div className="p-4 overflow-y-auto space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Course Link
-            </label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Course Link</label>
             <input
               type="text"
               value={link}
@@ -587,9 +559,7 @@ const EditSubjectModal = ({ subject, isOpen, onClose, onSave, onDelete }) => {
             />
           </div>
           <div>
-            <h3 className="text-lg font-semibold mt-4 mb-2 dark:text-white">
-              Lessons
-            </h3>
+            <h3 className="text-lg font-semibold mt-4 mb-2 dark:text-white">Lessons</h3>
             <div className="space-y-2">
               {lessons.length > 0 ? (
                 lessons.map((l, idx) => (
@@ -598,12 +568,12 @@ const EditSubjectModal = ({ subject, isOpen, onClose, onSave, onDelete }) => {
                       type="text"
                       value={l.name}
                       onChange={(e) => {
-                        const newLessons = [...lessons];
+                        const newLessons = [...lessons]
                         newLessons[idx] = {
                           ...newLessons[idx],
                           name: e.target.value,
-                        };
-                        setLessons(newLessons);
+                        }
+                        setLessons(newLessons)
                       }}
                       className="flex-1 input-style"
                       placeholder="Lesson name"
@@ -612,12 +582,12 @@ const EditSubjectModal = ({ subject, isOpen, onClose, onSave, onDelete }) => {
                       type="text"
                       value={l.duration}
                       onChange={(e) => {
-                        const newLessons = [...lessons];
+                        const newLessons = [...lessons]
                         newLessons[idx] = {
                           ...newLessons[idx],
                           duration: e.target.value,
-                        };
-                        setLessons(newLessons);
+                        }
+                        setLessons(newLessons)
                       }}
                       className="w-28 text-center input-style font-mono"
                       placeholder="1h 30m"
@@ -625,8 +595,8 @@ const EditSubjectModal = ({ subject, isOpen, onClose, onSave, onDelete }) => {
                     <button
                       type="button"
                       onClick={() => {
-                        const newLessons = lessons.filter((_, i) => i !== idx);
-                        setLessons(newLessons);
+                        const newLessons = lessons.filter((_, i) => i !== idx)
+                        setLessons(newLessons)
                       }}
                       className="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-md"
                       aria-label={`Delete ${l.name}`}
@@ -654,9 +624,7 @@ const EditSubjectModal = ({ subject, isOpen, onClose, onSave, onDelete }) => {
             </div>
           </div>
           <div>
-            <h3 className="text-lg font-semibold mt-4 mb-2 dark:text-white">
-              Add Multiple Lessons
-            </h3>
+            <h3 className="text-lg font-semibold mt-4 mb-2 dark:text-white">Add Multiple Lessons</h3>
             <textarea
               value={bulkLessons}
               onChange={(e) => setBulkLessons(e.target.value)}
@@ -672,10 +640,7 @@ const EditSubjectModal = ({ subject, isOpen, onClose, onSave, onDelete }) => {
           >
             Cancel
           </button>
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-          >
+          <button onClick={handleSave} className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
             Save Changes
           </button>
         </div>
@@ -683,9 +648,7 @@ const EditSubjectModal = ({ subject, isOpen, onClose, onSave, onDelete }) => {
         {showDeleteConfirm && (
           <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-lg">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl text-center">
-              <h3 className="text-lg font-bold dark:text-white">
-                Are you sure?
-              </h3>
+              <h3 className="text-lg font-bold dark:text-white">Are you sure?</h3>
               <p className="text-sm text-gray-600 dark:text-gray-300 my-2">
                 This will permanently delete the subject and all its lessons.
               </p>
@@ -696,10 +659,7 @@ const EditSubjectModal = ({ subject, isOpen, onClose, onSave, onDelete }) => {
                 >
                   Cancel
                 </button>
-                <button
-                  onClick={handleDeleteSubject}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md"
-                >
+                <button onClick={handleDeleteSubject} className="px-4 py-2 bg-red-600 text-white rounded-md">
                   Delete
                 </button>
               </div>
@@ -708,45 +668,45 @@ const EditSubjectModal = ({ subject, isOpen, onClose, onSave, onDelete }) => {
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
 const AddSubjectModal = ({ isOpen, onClose, onSave }) => {
-  const [subjectName, setSubjectName] = useState("");
-  const [subjectLink, setSubjectLink] = useState("");
-  const [lessonsRaw, setLessonsRaw] = useState("");
+  const [subjectName, setSubjectName] = useState("")
+  const [subjectLink, setSubjectLink] = useState("")
+  const [lessonsRaw, setLessonsRaw] = useState("")
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   const handleSave = () => {
     if (!subjectName.trim()) {
-      alert("Subject name is required.");
-      return;
+      alert("Subject name is required.")
+      return
     }
     const newSubject = {
       name: subjectName,
       lessons: [],
       link: subjectLink,
-    };
-    const lines = lessonsRaw.trim().split("\n");
+    }
+    const lines = lessonsRaw.trim().split("\n")
     lines.forEach((line) => {
-      line = line.trim();
+      line = line.trim()
       if (line && line.includes("•")) {
-        const [name, duration] = line.split("•").map((s) => s.trim());
+        const [name, duration] = line.split("•").map((s) => s.trim())
         newSubject.lessons.push({
           id: crypto.randomUUID(),
           name,
           duration,
           durationInMinutes: parseDurationToMinutes(duration),
-        });
+        })
       }
-    });
-    onSave(newSubject);
-    onClose();
-    setSubjectName("");
-    setSubjectLink("");
-    setLessonsRaw("");
-  };
+    })
+    onSave(newSubject)
+    onClose()
+    setSubjectName("")
+    setSubjectLink("")
+    setLessonsRaw("")
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -756,9 +716,7 @@ const AddSubjectModal = ({ isOpen, onClose, onSave }) => {
         </div>
         <div className="p-4 overflow-y-auto space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Subject Name
-            </label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Subject Name</label>
             <input
               type="text"
               value={subjectName}
@@ -768,9 +726,7 @@ const AddSubjectModal = ({ isOpen, onClose, onSave }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Course Link (Optional)
-            </label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Course Link (Optional)</label>
             <input
               type="text"
               value={subjectLink}
@@ -780,9 +736,7 @@ const AddSubjectModal = ({ isOpen, onClose, onSave }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Lessons
-            </label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Lessons</label>
             <textarea
               value={lessonsRaw}
               onChange={(e) => setLessonsRaw(e.target.value)}
@@ -790,8 +744,7 @@ const AddSubjectModal = ({ isOpen, onClose, onSave }) => {
               placeholder="Lesson Name 1 • 1h 30m&#10;Lesson Name 2 • 45m"
             ></textarea>
             <p className="text-xs text-gray-500 mt-1">
-              Paste lessons, one per line, with name and duration separated by
-              '•'.
+              Paste lessons, one per line, with name and duration separated by '•'.
             </p>
           </div>
         </div>
@@ -802,23 +755,16 @@ const AddSubjectModal = ({ isOpen, onClose, onSave }) => {
           >
             Cancel
           </button>
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-          >
+          <button onClick={handleSave} className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
             Add Subject
           </button>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-const TodaysLessons = ({
-  lessonsBySubject,
-  completedLessons,
-  onLessonToggle,
-}) => (
+const TodaysLessons = ({ lessonsBySubject, completedLessons, onLessonToggle }) => (
   <div className="p-4 rounded-xl bg-white/50 dark:bg-gray-800/20 backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
     <h3 className="font-semibold text-slate-700 dark:text-gray-300 flex items-center">
       <svg
@@ -838,35 +784,30 @@ const TodaysLessons = ({
     <div className="mt-2 text-sm text-slate-600 dark:text-gray-400">
       {Object.keys(lessonsBySubject as Record<string, any[]>).length > 0 ? (
         <div className="space-y-4">
-          {Object.entries(lessonsBySubject as Record<string, any[]>).map(
-            ([subjectName, lessons]) => (
-              <div
-                key={subjectName}
-                className="pl-3 border-l-2 border-indigo-500"
-              >
-                <h4 className="text-sm md:text-base font-semibold text-slate-800 dark:text-slate-200 mb-2">
-                  {subjectName}
-                </h4>
-                <div className="space-y-1">
-                  {(lessons as any[]).map((l: any) => (
-                    <Lesson
-                      key={l.id}
-                      lesson={l}
-                      isCompleted={!!completedLessons[l.id]}
-                      onToggle={() => onLessonToggle(l.id)}
-                    />
-                  ))}
-                </div>
+          {Object.entries(lessonsBySubject as Record<string, any[]>).map(([subjectName, lessons]) => (
+            <div key={subjectName} className="pl-3 border-l-2 border-indigo-500">
+              <h4 className="text-sm md:text-base font-semibold text-slate-800 dark:text-slate-200 mb-2">
+                {subjectName}
+              </h4>
+              <div className="space-y-1">
+                {(lessons as any[]).map((l: any) => (
+                  <Lesson
+                    key={l.id}
+                    lesson={l}
+                    isCompleted={!!completedLessons[l.id]}
+                    onToggle={() => onLessonToggle(l.id)}
+                  />
+                ))}
               </div>
-            )
-          )}
+            </div>
+          ))}
         </div>
       ) : (
         "Select ongoing subjects and set targets to see your lessons for today!"
       )}
     </div>
   </div>
-);
+)
 
 const RevisionReminder = ({ completedLast7Days }) => (
   <div className="p-4 rounded-xl bg-white/50 dark:bg-gray-800/20 backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
@@ -891,26 +832,82 @@ const RevisionReminder = ({ completedLast7Days }) => (
         : "No lessons need revision this week. Keep completing lessons to build your revision schedule!"}
     </div>
   </div>
-);
+)
+
+const RevisionsDueToday = ({ revisionLessons, completedLessons, onLessonToggle, subjects }) => (
+  <div className="p-4 rounded-xl bg-white/50 dark:bg-gray-800/20 backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
+    <h3 className="font-semibold text-slate-700 dark:text-gray-300 flex items-center">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-5 w-5 mr-2 text-yellow-500"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fillRule="evenodd"
+          d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+          clipRule="evenodd"
+        />
+      </svg>
+      Revisions Due Today
+    </h3>
+    <div className="mt-2 text-sm text-slate-600 dark:text-gray-400">
+      {revisionLessons.length > 0 ? (
+        <div className="space-y-4">
+          {(() => {
+            // Group revision lessons by subject
+            const groupedRevisions = revisionLessons.reduce((acc, lesson) => {
+              const subjectName =
+                subjects.find((s) => s.lessons.some((l) => l.id === lesson.id))?.name || "Unknown Subject"
+              if (!acc[subjectName]) acc[subjectName] = []
+              acc[subjectName].push(lesson)
+              return acc
+            }, {})
+
+            return Object.entries(groupedRevisions).map(([subjectName, lessons]) => (
+              <div key={subjectName} className="pl-3 border-l-2 border-yellow-500">
+                <h4 className="text-sm md:text-base font-semibold text-slate-800 dark:text-slate-200 mb-2">
+                  {subjectName}
+                </h4>
+                <div className="space-y-1">
+                  {lessons.map((lesson) => (
+                    <Lesson
+                      key={lesson.id}
+                      lesson={lesson}
+                      isCompleted={!!completedLessons[lesson.id]}
+                      onToggle={() => onLessonToggle(lesson.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))
+          })()}
+        </div>
+      ) : (
+        "No lessons scheduled for revision today! Complete some lessons to build your spaced repetition schedule."
+      )}
+    </div>
+  </div>
+)
 
 const AddTestSeries = ({ onAddTest }) => {
-  const [name, setName] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [desc, setDesc] = useState("");
+  const [name, setName] = useState("")
+  const [date, setDate] = useState("")
+  const [time, setTime] = useState("")
+  const [desc, setDesc] = useState("")
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e.preventDefault()
     if (!name.trim() || !date) {
-      alert("Test Name and Date are required.");
-      return;
+      alert("Test Name and Date are required.")
+      return
     }
-    onAddTest({ id: crypto.randomUUID(), name, date, time, desc });
-    setName("");
-    setDate("");
-    setTime("");
-    setDesc("");
-  };
+    onAddTest({ id: crypto.randomUUID(), name, date, time, desc })
+    setName("")
+    setDate("")
+    setTime("")
+    setDesc("")
+  }
 
   return (
     <div className="p-4 rounded-xl bg-white/50 dark:bg-gray-800/20 backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
@@ -939,18 +936,8 @@ const AddTestSeries = ({ onAddTest }) => {
           className="w-full input-style"
         />
         <div className="flex space-x-2">
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-full input-style"
-          />
-          <input
-            type="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            className="w-full input-style"
-          />
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full input-style" />
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full input-style" />
         </div>
         <textarea
           value={desc}
@@ -966,8 +953,8 @@ const AddTestSeries = ({ onAddTest }) => {
         </button>
       </form>
     </div>
-  );
-};
+  )
+}
 
 const UpcomingTests = ({ tests, onDeleteTest }) => (
   <div className="p-4 rounded-xl bg-white/50 dark:bg-gray-800/20 backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
@@ -989,9 +976,7 @@ const UpcomingTests = ({ tests, onDeleteTest }) => (
     <div className="mt-2 text-sm text-slate-600 dark:text-gray-400 space-y-2">
       {tests.length > 0
         ? tests
-            .sort(
-              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-            )
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
             .map((test) => (
               <div
                 key={test.id}
@@ -1007,12 +992,7 @@ const UpcomingTests = ({ tests, onDeleteTest }) => (
                   onClick={() => onDeleteTest(test.id)}
                   className="p-1 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path
                       fillRule="evenodd"
                       d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
@@ -1025,15 +1005,15 @@ const UpcomingTests = ({ tests, onDeleteTest }) => (
         : "No upcoming tests scheduled. Add some test series to stay organized!"}
     </div>
   </div>
-);
+)
 
 const PyqLinkEditor = ({ globalLink, onGlobalLinkChange }) => {
-  const [currentLink, setCurrentLink] = useState(globalLink);
+  const [currentLink, setCurrentLink] = useState(globalLink)
 
   const handleSave = () => {
-    onGlobalLinkChange(currentLink);
+    onGlobalLinkChange(currentLink)
     // A small visual feedback could be added here, e.g., a temporary "Saved!" message.
-  };
+  }
 
   return (
     <div className="p-4 rounded-xl bg-white/50 dark:bg-gray-800/20 backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
@@ -1051,9 +1031,7 @@ const PyqLinkEditor = ({ globalLink, onGlobalLinkChange }) => {
       </h3>
       <div className="mt-2 space-y-3">
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">
-            Global PYQ Link
-          </label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Global PYQ Link</label>
           <input
             type="text"
             value={currentLink}
@@ -1070,35 +1048,29 @@ const PyqLinkEditor = ({ globalLink, onGlobalLinkChange }) => {
         </button>
       </div>
     </div>
-  );
-};
+  )
+}
 
-const MultiSubjectSelector = ({
-  subjects,
-  ongoingSubjects,
-  onOngoingChange,
-}) => {
+const MultiSubjectSelector = ({ subjects, ongoingSubjects, onOngoingChange }) => {
   const handleCheck = (subjectName) => {
-    const newOngoing = { ...ongoingSubjects };
+    const newOngoing = { ...ongoingSubjects }
     if (newOngoing[subjectName] !== undefined) {
-      delete newOngoing[subjectName];
+      delete newOngoing[subjectName]
     } else {
-      newOngoing[subjectName] = "1"; // Default to 1 lesson as a string
+      newOngoing[subjectName] = "1" // Default to 1 lesson as a string
     }
-    onOngoingChange(newOngoing);
-  };
+    onOngoingChange(newOngoing)
+  }
 
   const handleTargetChange = (subjectName, value) => {
-    const newOngoing = { ...ongoingSubjects };
-    newOngoing[subjectName] = value;
-    onOngoingChange(newOngoing);
-  };
+    const newOngoing = { ...ongoingSubjects }
+    newOngoing[subjectName] = value
+    onOngoingChange(newOngoing)
+  }
 
   return (
     <div className="p-4 rounded-xl bg-card-bg backdrop-blur-sm border border-border-color">
-      <h3 className="font-semibold text-slate-700 dark:text-gray-300">
-        Ongoing Subjects & Daily Targets
-      </h3>
+      <h3 className="font-semibold text-slate-700 dark:text-gray-300">Ongoing Subjects & Daily Targets</h3>
       <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
         {subjects.map((subject) => (
           <div key={subject.name} className="flex items-center justify-between">
@@ -1118,9 +1090,7 @@ const MultiSubjectSelector = ({
               <input
                 type="text"
                 value={ongoingSubjects[subject.name]}
-                onChange={(e) =>
-                  handleTargetChange(subject.name, e.target.value)
-                }
+                onChange={(e) => handleTargetChange(subject.name, e.target.value)}
                 className="w-16 text-center p-1 border rounded-md bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
               />
             )}
@@ -1128,26 +1098,27 @@ const MultiSubjectSelector = ({
         ))}
       </div>
     </div>
-  );
-};
+  )
+}
 
 // --- Main App Component ---
 export default function App() {
-  const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
+  const [expandedSubject, setExpandedSubject] = useState<string | null>(null)
 
   const handleSubjectToggle = (subjectName: string) => {
-    setExpandedSubject((prev) => (prev === subjectName ? null : subjectName));
-  };
+    setExpandedSubject((prev) => (prev === subjectName ? null : subjectName))
+  }
 
   const [appState, setAppState] = useState(() => {
     try {
-      const savedState = localStorage.getItem("gateTrackerState");
-      const defaultTargetDate = new Date();
-      defaultTargetDate.setMonth(defaultTargetDate.getMonth() + 6);
+      const savedState = localStorage.getItem("gateTrackerState")
+      const defaultTargetDate = new Date()
+      defaultTargetDate.setMonth(defaultTargetDate.getMonth() + 6)
 
       const initialState = {
         subjects: parseCourseData(courseDataRaw),
         completedLessons: {},
+        revisionSchedule: {}, // { [lessonId]: { completedDate, nextReviewDate, reviewCount, interval } }
         streaks: [],
         targetDate: defaultTargetDate.toISOString().split("T")[0],
         testSeries: [],
@@ -1155,24 +1126,28 @@ export default function App() {
         ongoingSubjects: {}, // { "Subject Name": "dailyTargetAsString" }
         todaysPlan: { date: null, lessonIds: [] },
         pyqLink: initialPyqLink,
-      };
+      }
 
       if (savedState) {
-        const loaded = JSON.parse(savedState);
+        const loaded = JSON.parse(savedState)
         // Ensure pyqLink exists, if not, add it from initial constant
         if (!loaded.pyqLink) {
-          loaded.pyqLink = initialPyqLink;
+          loaded.pyqLink = initialPyqLink
         }
-        return { ...initialState, ...loaded };
+        if (!loaded.revisionSchedule) {
+          loaded.revisionSchedule = {}
+        }
+        return { ...initialState, ...loaded }
       }
-      return initialState;
+      return initialState
     } catch (error) {
-      console.error("Could not load state from local storage", error);
-      const defaultTargetDate = new Date();
-      defaultTargetDate.setMonth(defaultTargetDate.getMonth() + 6);
+      console.error("Could not load state from local storage", error)
+      const defaultTargetDate = new Date()
+      defaultTargetDate.setMonth(defaultTargetDate.getMonth() + 6)
       return {
         subjects: parseCourseData(courseDataRaw),
         completedLessons: {},
+        revisionSchedule: {},
         streaks: [],
         targetDate: defaultTargetDate.toISOString().split("T")[0],
         testSeries: [],
@@ -1180,137 +1155,216 @@ export default function App() {
         ongoingSubjects: {},
         todaysPlan: { date: null, lessonIds: [] },
         pyqLink: initialPyqLink,
-      };
+      }
     }
-  });
+  })
 
   // Apply theme on initial load and when it changes
   useEffect(() => {
-    const html = document.documentElement;
+    const html = document.documentElement
     if (appState.theme === "dark") {
-      html.setAttribute("data-theme", "dark");
+      html.setAttribute("data-theme", "dark")
     } else {
-      html.removeAttribute("data-theme");
+      html.removeAttribute("data-theme")
     }
-  }, [appState.theme]);
+  }, [appState.theme])
 
-  const [history, setHistory] = useState([]);
-  const [editingSubjectName, setEditingSubjectName] = useState(null);
-  const [isAddSubjectModalOpen, setIsAddSubjectModalOpen] = useState(false);
+  const [history, setHistory] = useState([])
+  const [editingSubjectName, setEditingSubjectName] = useState(null)
+  const [isAddSubjectModalOpen, setIsAddSubjectModalOpen] = useState(false)
 
   const updateStateAndHistory = (newState) => {
-    setHistory((prevHistory) => [...prevHistory.slice(-9), appState]);
-    setAppState(newState);
-  };
+    setHistory((prevHistory) => [...prevHistory.slice(-9), appState])
+    setAppState(newState)
+  }
 
   useEffect(() => {
-    localStorage.setItem("gateTrackerState", JSON.stringify(appState));
-  }, [appState]);
+    localStorage.setItem("gateTrackerState", JSON.stringify(appState))
+  }, [appState])
 
   useEffect(() => {
-    document.documentElement.classList.toggle(
-      "dark",
-      appState.theme === "dark"
-    );
-  }, [appState.theme]);
+    document.documentElement.classList.toggle("dark", appState.theme === "dark")
+  }, [appState.theme])
 
   useEffect(() => {
-    const today = getTodayString();
-    if (appState.todaysPlan.date !== today) {
-      let lessonIdsForToday = [];
+    const today = getTodayString()
+    console.log("[v0] Today's lesson useEffect triggered", {
+      today,
+      currentDate: appState.todaysPlan.date,
+      ongoingSubjects: appState.ongoingSubjects,
+      completedLessons: Object.keys(appState.completedLessons).filter((id) => appState.completedLessons[id]),
+    })
+
+    if (appState.todaysPlan.date !== today && appState.todaysPlan.date !== "FORCE_REGEN") {
+      console.log("[v0] New day - generating fresh lesson plan")
+      const lessonIdsForToday = []
       for (const subjectName in appState.ongoingSubjects) {
-        const target = parseInt(appState.ongoingSubjects[subjectName], 10) || 1;
-        const subject = appState.subjects.find((s) => s.name === subjectName);
+        const target = Number.parseInt(appState.ongoingSubjects[subjectName], 10) || 1
+        const subject = appState.subjects.find((s) => s.name === subjectName)
         if (subject) {
           const nextLessonIds = subject.lessons
             .filter((l) => !appState.completedLessons[l.id])
             .slice(0, target)
-            .map((l) => l.id);
-          lessonIdsForToday.push(...nextLessonIds);
+            .map((l) => l.id)
+          lessonIdsForToday.push(...nextLessonIds)
         }
       }
       setAppState((prevState) => ({
         ...prevState,
         todaysPlan: { date: today, lessonIds: lessonIdsForToday },
-      }));
+      }))
+    } else {
+      console.log("[v0] Same day - preserving existing lessons")
+      const currentLessonIds = [...appState.todaysPlan.lessonIds]
+      console.log("[v0] Current lesson IDs:", currentLessonIds)
+      let needsUpdate = false
+
+      const completedLessonsToday = currentLessonIds.filter((id) => appState.completedLessons[id])
+      console.log("[v0] Completed lessons today:", completedLessonsToday)
+
+      // Check each ongoing subject
+      for (const subjectName in appState.ongoingSubjects) {
+        const target = Number.parseInt(appState.ongoingSubjects[subjectName], 10) || 1
+        const subject = appState.subjects.find((s) => s.name === subjectName)
+        if (subject) {
+          // Count ALL lessons from this subject in today's plan (completed + incomplete)
+          const existingLessonsFromSubject = currentLessonIds.filter((id) =>
+            subject.lessons.some((lesson) => lesson.id === id),
+          ).length
+
+          console.log("[v0] Subject:", subjectName, "Target:", target, "Existing:", existingLessonsFromSubject)
+
+          // If we need more lessons from this subject (target increased)
+          if (existingLessonsFromSubject < target) {
+            const lessonsNeeded = target - existingLessonsFromSubject
+            const availableLessons = subject.lessons
+              .filter((l) => !appState.completedLessons[l.id] && !currentLessonIds.includes(l.id))
+              .slice(0, lessonsNeeded)
+
+            console.log("[v0] Adding", availableLessons.length, "new lessons for", subjectName)
+            if (availableLessons.length > 0) {
+              currentLessonIds.push(...availableLessons.map((l) => l.id))
+              needsUpdate = true
+            }
+          }
+        }
+      }
+
+      // Add lessons for newly added subjects
+      for (const subjectName in appState.ongoingSubjects) {
+        const subject = appState.subjects.find((s) => s.name === subjectName)
+        if (subject) {
+          // Check if this subject has any lessons in today's plan
+          const hasLessonsInPlan = currentLessonIds.some((id) => subject.lessons.some((lesson) => lesson.id === id))
+
+          // If no lessons from this subject in plan, add the target number
+          if (!hasLessonsInPlan) {
+            const target = Number.parseInt(appState.ongoingSubjects[subjectName], 10) || 1
+            const availableLessons = subject.lessons.filter((l) => !appState.completedLessons[l.id]).slice(0, target)
+
+            console.log("[v0] New subject", subjectName, "adding", availableLessons.length, "lessons")
+            if (availableLessons.length > 0) {
+              currentLessonIds.push(...availableLessons.map((l) => l.id))
+              needsUpdate = true
+            }
+          }
+        }
+      }
+
+      // Remove lessons from subjects that are no longer ongoing
+      const validLessonIds = currentLessonIds.filter((id) => {
+        const lesson = appState.subjects.flatMap((s) => s.lessons).find((l) => l.id === id)
+        if (!lesson) return false
+        const subjectName = appState.subjects.find((s) => s.lessons.some((l) => l.id === id))?.name
+        return subjectName && appState.ongoingSubjects.hasOwnProperty(subjectName)
+      })
+
+      console.log("[v0] Final lesson IDs:", validLessonIds)
+      console.log("[v0] Needs update:", needsUpdate || validLessonIds.length !== currentLessonIds.length)
+
+      if (validLessonIds.length !== currentLessonIds.length || needsUpdate) {
+        setAppState((prevState) => ({
+          ...prevState,
+          todaysPlan: { date: today, lessonIds: validLessonIds },
+        }))
+      }
     }
-  }, [
-    appState.ongoingSubjects,
-    appState.subjects,
-    appState.completedLessons,
-    appState.todaysPlan.date,
-  ]);
+  }, [appState.ongoingSubjects, appState.subjects, appState.completedLessons, appState.todaysPlan.date])
 
   const { totalLessons, totalCompleted } = useMemo(() => {
-    const lessons = appState.subjects.flatMap((s) => s.lessons);
+    const lessons = appState.subjects.flatMap((s) => s.lessons)
     return {
       totalLessons: lessons.length,
       totalCompleted: Object.keys(appState.completedLessons).length,
-    };
-  }, [appState.subjects, appState.completedLessons]);
+    }
+  }, [appState.subjects, appState.completedLessons])
 
-  const overallProgress =
-    totalLessons > 0 ? (totalCompleted / totalLessons) * 100 : 0;
+  const overallProgress = totalLessons > 0 ? (totalCompleted / totalLessons) * 100 : 0
 
   const currentStreak = useMemo(() => {
-    const uniqueDates = [...new Set(appState.streaks)].sort() as string[];
-    if (uniqueDates.length === 0) return 0;
-    let streak = 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const uniqueDates = [...new Set(appState.streaks)].sort() as string[]
+    if (uniqueDates.length === 0) return 0
+    let streak = 0
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
     for (let i = uniqueDates.length - 1; i >= 0; i--) {
-      const date = new Date(String(uniqueDates[i]));
-      date.setHours(0, 0, 0, 0);
-      const diff = (today.getTime() - date.getTime()) / (1000 * 3600 * 24);
+      const date = new Date(String(uniqueDates[i]))
+      date.setHours(0, 0, 0, 0)
+      const diff = (today.getTime() - date.getTime()) / (1000 * 3600 * 24)
       if (diff === streak) {
-        streak++;
+        streak++
       } else if (diff > streak) {
-        break;
+        break
       }
     }
     if (uniqueDates.length > 0) {
-      const lastDate = new Date(String(uniqueDates[uniqueDates.length - 1]));
-      lastDate.setHours(0, 0, 0, 0);
-      const diffFromToday =
-        (today.getTime() - lastDate.getTime()) / (1000 * 3600 * 24);
-      if (diffFromToday > 1) return 0;
+      const lastDate = new Date(String(uniqueDates[uniqueDates.length - 1]))
+      lastDate.setHours(0, 0, 0, 0)
+      const diffFromToday = (today.getTime() - lastDate.getTime()) / (1000 * 3600 * 24)
+      if (diffFromToday > 1) return 0
     }
-    return streak;
-  }, [appState.streaks]);
+    return streak
+  }, [appState.streaks])
 
   const handleLessonToggle = useCallback(
     (lessonId) => {
-      const newState = JSON.parse(JSON.stringify(appState));
-      const { completedLessons, streaks } = newState;
-      const today = getTodayString();
+      const newState = JSON.parse(JSON.stringify(appState))
+      const { completedLessons, streaks, revisionSchedule } = newState
+      const today = getTodayString()
 
       if (completedLessons[lessonId]) {
-        const completionDate = completedLessons[lessonId].date;
-        delete completedLessons[lessonId];
-        if (
-          !Object.values(completedLessons).some(
-            (l: any) => l.date === completionDate
-          )
-        ) {
-          const index = streaks.indexOf(completionDate);
-          if (index > -1) streaks.splice(index, 1);
+        // Lesson is currently completed
+        const isDueForRevision = isLessonDueForRevisionToday(lessonId, revisionSchedule)
+
+        if (isDueForRevision) {
+          // This is a revision review - update the revision schedule with increased review count
+          newState.revisionSchedule = scheduleRevision(lessonId, today, revisionSchedule)
+          console.log("[v0] Lesson reviewed for spaced repetition:", lessonId)
+        } else {
+          // This is uncompleting a regular lesson
+          const completionDate = completedLessons[lessonId].date
+          delete completedLessons[lessonId]
+          delete revisionSchedule[lessonId] // Remove from revision schedule if uncompleted
+          if (!Object.values(completedLessons).some((l: any) => l.date === completionDate)) {
+            const index = streaks.indexOf(completionDate)
+            if (index > -1) streaks.splice(index, 1)
+          }
+          console.log("[v0] Lesson uncompleted:", lessonId)
         }
       } else {
-        completedLessons[lessonId] = { date: today };
-        if (!streaks.includes(today)) streaks.push(today);
+        // Lesson is not completed - complete it and schedule for revision
+        completedLessons[lessonId] = { date: today }
+        if (!streaks.includes(today)) streaks.push(today)
+        newState.revisionSchedule = scheduleRevision(lessonId, today, revisionSchedule) // Schedule for revision
+        console.log("[v0] Lesson completed and scheduled for revision:", lessonId)
       }
-      updateStateAndHistory(newState);
+      updateStateAndHistory(newState)
     },
-    [appState]
-  );
+    [appState],
+  )
 
-  const handleUpdateSubject = (
-    subjectName,
-    updatedLessons,
-    updatedLink,
-    updatedPyqLink
-  ) => {
-    const newState = JSON.parse(JSON.stringify(appState));
+  const handleUpdateSubject = (subjectName, updatedLessons, updatedLink, updatedPyqLink) => {
+    const newState = JSON.parse(JSON.stringify(appState))
     newState.subjects = newState.subjects.map((s) =>
       s.name === subjectName
         ? {
@@ -1319,110 +1373,110 @@ export default function App() {
             link: updatedLink,
             pyqLink: updatedPyqLink,
           }
-        : s
-    );
-    updateStateAndHistory(newState);
-  };
+        : s,
+    )
+    updateStateAndHistory(newState)
+  }
 
   const handleAddNewSubject = (newSubject) => {
-    const newState = JSON.parse(JSON.stringify(appState));
-    newState.subjects.push(newSubject);
-    updateStateAndHistory(newState);
-  };
+    const newState = JSON.parse(JSON.stringify(appState))
+    newState.subjects.push(newSubject)
+    updateStateAndHistory(newState)
+  }
 
   const handleDeleteSubject = (subjectName) => {
-    const newState = JSON.parse(JSON.stringify(appState));
-    newState.subjects = newState.subjects.filter((s) => s.name !== subjectName);
+    const newState = JSON.parse(JSON.stringify(appState))
+    newState.subjects = newState.subjects.filter((s) => s.name !== subjectName)
     if (newState.ongoingSubjects[subjectName]) {
-      delete newState.ongoingSubjects[subjectName];
+      delete newState.ongoingSubjects[subjectName]
     }
-    updateStateAndHistory(newState);
-  };
+    updateStateAndHistory(newState)
+  }
 
   const handleAddTest = (newTest) => {
-    const newState = JSON.parse(JSON.stringify(appState));
-    newState.testSeries.push(newTest);
-    updateStateAndHistory(newState);
-  };
+    const newState = JSON.parse(JSON.stringify(appState))
+    newState.testSeries.push(newTest)
+    updateStateAndHistory(newState)
+  }
 
   const handleDeleteTest = (testId) => {
-    const newState = JSON.parse(JSON.stringify(appState));
-    newState.testSeries = newState.testSeries.filter((t) => t.id !== testId);
-    updateStateAndHistory(newState);
-  };
+    const newState = JSON.parse(JSON.stringify(appState))
+    newState.testSeries = newState.testSeries.filter((t) => t.id !== testId)
+    updateStateAndHistory(newState)
+  }
 
   const handleUndo = () => {
     if (history.length > 0) {
-      const lastState = history[history.length - 1];
-      setHistory(history.slice(0, -1));
-      setAppState(lastState);
+      const lastState = history[history.length - 1]
+      setHistory(history.slice(0, -1))
+      setAppState(lastState)
     }
-  };
+  }
 
   const handleGlobalPyqLinkChange = (newLink) => {
-    updateStateAndHistory({ ...appState, pyqLink: newLink });
-  };
+    updateStateAndHistory({ ...appState, pyqLink: newLink })
+  }
 
   const toggleTheme = () =>
     updateStateAndHistory({
       ...appState,
       theme: appState.theme === "light" ? "dark" : "light",
-    });
-  const handleTargetDateChange = (e) =>
-    updateStateAndHistory({ ...appState, targetDate: e.target.value });
+    })
+  const handleTargetDateChange = (e) => updateStateAndHistory({ ...appState, targetDate: e.target.value })
   const handleOngoingSubjectsChange = (newOngoing) => {
-    const newState = { ...appState, ongoingSubjects: newOngoing };
-    newState.todaysPlan = { date: "FORCE_REGEN", lessonIds: [] };
-    updateStateAndHistory(newState);
-  };
+    const newState = { ...appState, ongoingSubjects: newOngoing }
+    newState.todaysPlan = { date: "FORCE_REGEN", lessonIds: [...appState.todaysPlan.lessonIds] }
+    updateStateAndHistory(newState)
+  }
 
   const editingSubject = useMemo(
     () => appState.subjects.find((s) => s.name === editingSubjectName),
-    [editingSubjectName, appState.subjects]
-  );
+    [editingSubjectName, appState.subjects],
+  )
 
-  const {
-    todaysLessons,
-    lessonsBySubject,
-    completedLast7Days,
-    totalDailyTarget,
-  } = useMemo(() => {
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const { todaysLessons, lessonsBySubject, completedLast7Days, totalDailyTarget, revisionLessons } = useMemo(() => {
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
     const completedInLastWeek = Object.values(appState.completedLessons).filter(
-      (c: any) => new Date(c.date) > sevenDaysAgo
-    ).length;
+      (c: any) => new Date(c.date) > sevenDaysAgo,
+    ).length
 
-    const allLessons = appState.subjects.flatMap((s) => s.lessons);
+    const allLessons = appState.subjects.flatMap((s) => s.lessons)
     const lessonsForToday = appState.todaysPlan.lessonIds
       .map((id) => allLessons.find((l) => l.id === id))
-      .filter(Boolean);
+      .filter(Boolean)
 
-    const lessonIdSet = new Set(appState.todaysPlan.lessonIds);
-    const grouped: Record<string, any[]> = {} as any;
+    const lessonIdSet = new Set(appState.todaysPlan.lessonIds)
+    const grouped: Record<string, any[]> = {} as any
     appState.subjects.forEach((s) => {
-      const subset = s.lessons.filter((l) => lessonIdSet.has(l.id));
-      if (subset.length) grouped[s.name] = subset;
-    });
+      const subset = s.lessons.filter((l) => lessonIdSet.has(l.id))
+      if (subset.length) grouped[s.name] = subset
+    })
 
-    const dailyTargetSum = (
-      Object.values(appState.ongoingSubjects) as string[]
-    ).reduce((sum: number, val: string) => sum + (parseInt(val, 10) || 0), 0);
+    const dailyTargetSum = (Object.values(appState.ongoingSubjects) as string[]).reduce(
+      (sum: number, val: string) => sum + (Number.parseInt(val, 10) || 0),
+      0,
+    )
+
+    const todayString = getTodayString()
+    const revisionLessonIds = getRevisionsForDate(appState.revisionSchedule, todayString)
+    const revisionLessons = revisionLessonIds
+      .map((lessonId) => allLessons.find((l) => l.id === lessonId))
+      .filter(Boolean)
 
     return {
       todaysLessons: lessonsForToday,
       lessonsBySubject: grouped,
       completedLast7Days: completedInLastWeek,
       totalDailyTarget: dailyTargetSum,
-    };
-  }, [appState]);
+      revisionLessons: revisionLessons,
+    }
+  }, [appState])
 
   const todaysCompletionsCount = useMemo(() => {
-    const today = getTodayString();
-    return Object.values(appState.completedLessons).filter(
-      (l: any) => l.date === today
-    ).length;
-  }, [appState.completedLessons]);
+    const today = getTodayString()
+    return Object.values(appState.completedLessons).filter((l: any) => l.date === today).length
+  }, [appState.completedLessons])
 
   return (
     <>
@@ -1477,9 +1531,7 @@ export default function App() {
 
           <div className="mt-6">
             <div className="flex justify-between mb-1">
-              <span className="text-base font-medium text-indigo-700 dark:text-indigo-400">
-                Overall Progress
-              </span>
+              <span className="text-base font-medium text-indigo-700 dark:text-indigo-400">Overall Progress</span>
               <span className="text-sm font-bold text-indigo-700 dark:text-indigo-400">
                 {overallProgress.toFixed(1)}%
               </span>
@@ -1502,26 +1554,16 @@ export default function App() {
 
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
             <div className="bg-white/50 dark:bg-gray-800/20 p-4 rounded-xl backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
-              <h3 className="font-semibold text-slate-700 dark:text-gray-300">
-                Total Daily Target
-              </h3>
-              <p className="text-4xl font-bold text-indigo-600 dark:text-indigo-400 mt-2">
-                {totalDailyTarget}
-              </p>
-              <p className="text-sm text-slate-600 dark:text-gray-400">
-                Completed today: {todaysCompletionsCount}
-              </p>
+              <h3 className="font-semibold text-slate-700 dark:text-gray-300">Total Daily Target</h3>
+              <p className="text-4xl font-bold text-indigo-600 dark:text-indigo-400 mt-2">{totalDailyTarget}</p>
+              <p className="text-sm text-slate-600 dark:text-gray-400">Completed today: {todaysCompletionsCount}</p>
             </div>
             <div className="bg-white/50 dark:bg-gray-800/20 p-4 rounded-xl backdrop-blur-sm border border-white/20 dark:border-gray-700/30">
-              <h3 className="font-semibold text-slate-700 dark:text-gray-300">
-                Current Streak
-              </h3>
+              <h3 className="font-semibold text-slate-700 dark:text-gray-300">Current Streak</h3>
               <p className="text-4xl font-bold text-indigo-600 dark:text-indigo-400 mt-2">
                 {currentStreak} Day{currentStreak !== 1 ? "s" : ""}
               </p>
-              <p className="text-sm text-slate-600 dark:text-gray-400">
-                Keep up the momentum!
-              </p>
+              <p className="text-sm text-slate-600 dark:text-gray-400">Keep up the momentum!</p>
             </div>
           </div>
         </header>
@@ -1538,16 +1580,16 @@ export default function App() {
             completedLessons={appState.completedLessons}
             onLessonToggle={handleLessonToggle}
           />
+          <RevisionsDueToday
+            revisionLessons={revisionLessons}
+            completedLessons={appState.completedLessons}
+            onLessonToggle={handleLessonToggle}
+            subjects={appState.subjects}
+          />
           <RevisionReminder completedLast7Days={completedLast7Days} />
           <AddTestSeries onAddTest={handleAddTest} />
-          <UpcomingTests
-            tests={appState.testSeries}
-            onDeleteTest={handleDeleteTest}
-          />
-          <PyqLinkEditor
-            globalLink={appState.pyqLink}
-            onGlobalLinkChange={handleGlobalPyqLinkChange}
-          />
+          <UpcomingTests tests={appState.testSeries} onDeleteTest={handleDeleteTest} />
+          <PyqLinkEditor globalLink={appState.pyqLink} onGlobalLinkChange={handleGlobalPyqLinkChange} />
         </div>
 
         <div className="mb-6 text-center">
@@ -1588,5 +1630,5 @@ export default function App() {
         />
       </div>
     </>
-  );
+  )
 }
